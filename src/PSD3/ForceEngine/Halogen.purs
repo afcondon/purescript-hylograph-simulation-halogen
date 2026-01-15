@@ -2,7 +2,7 @@
 -- |
 -- | Provides subscription-based API for integrating simulations with Halogen components.
 -- |
--- | Usage:
+-- | Single simulation usage:
 -- | ```purescript
 -- | handleAction Initialize = do
 -- |   sim <- liftEffect $ Sim.create defaultConfig
@@ -13,8 +13,19 @@
 -- |     Sim.Stopped -> SimStopped
 -- |     Sim.AlphaDecayed alpha -> AlphaChanged alpha
 -- | ```
+-- |
+-- | Simulation group usage (multiple synchronized simulations):
+-- | ```purescript
+-- | handleAction Initialize = do
+-- |   callbacks <- liftEffect defaultCallbacks
+-- |   group <- liftEffect $ createGroupWithCallbacks 6 defaultConfig callbacks
+-- |   emitter <- liftEffect $ subscribeToGroup group
+-- |   void $ H.subscribe $ emitter <#> \_ -> SimTick
+-- |   liftEffect $ startGroup group
+-- | ```
 module PSD3.ForceEngine.Halogen
   ( subscribeToSimulation
+  , subscribeToGroup
   -- Re-export event types for convenience
   , module Events
   ) where
@@ -24,9 +35,10 @@ import Prelude
 import Effect (Effect)
 import Effect.Ref as Ref
 import Halogen.Subscription as HS
-import PSD3.ForceEngine.Events (SimulationEvent(..), SimulationCallbacks) as Events
-import PSD3.ForceEngine.Events (SimulationEvent(..))
-import PSD3.ForceEngine.Simulation (Simulation, getCallbacks)
+import PSD3.Kernel.D3.Events (SimulationEvent(..), SimulationCallbacks) as Events
+import PSD3.Kernel.D3.Events (SimulationEvent(..))
+import PSD3.Kernel.D3.Simulation (Simulation, getCallbacks)
+import PSD3.Kernel.D3.SimulationGroup (SimulationGroup, getGroupCallbacks)
 import Data.Maybe (Maybe(..))
 
 -- | Create a Halogen subscription emitter for simulation events.
@@ -80,3 +92,33 @@ wireUpCallbacks listener cbs = do
 
   -- Wire alpha threshold callback
   Ref.write (\alpha -> HS.notify listener (AlphaDecayed alpha)) cbs.onAlphaThreshold
+
+-- | Create a Halogen subscription emitter for a simulation group.
+-- |
+-- | This provides a single subscription for multiple synchronized simulations.
+-- | The group must have been created with `createGroupWithCallbacks`.
+-- |
+-- | Example:
+-- | ```purescript
+-- | callbacks <- liftEffect defaultCallbacks
+-- | group <- liftEffect $ createGroupWithCallbacks 6 defaultConfig callbacks
+-- | emitter <- liftEffect $ subscribeToGroup group
+-- | void $ H.subscribe $ emitter <#> \event -> case event of
+-- |   Tick -> UpdateAllGraphPositions
+-- |   Started -> H.modify_ _ { simRunning = true }
+-- |   Stopped -> H.modify_ _ { simRunning = false }
+-- |   _ -> pure unit
+-- | liftEffect $ startGroup group
+-- | ```
+subscribeToGroup :: forall row linkRow.
+  SimulationGroup row linkRow
+  -> Effect (HS.Emitter SimulationEvent)
+subscribeToGroup group = do
+  { emitter, listener } <- HS.create
+
+  -- Wire up callbacks to emit events
+  case getGroupCallbacks group of
+    Nothing -> pure unit  -- No callbacks configured, emitter will never fire
+    Just cbs -> wireUpCallbacks listener cbs
+
+  pure emitter

@@ -3,16 +3,17 @@ import * as Data_Maybe from "../Data.Maybe/index.js";
 import * as Data_Unit from "../Data.Unit/index.js";
 import * as Effect_Ref from "../Effect.Ref/index.js";
 import * as Halogen_Subscription from "../Halogen.Subscription/index.js";
-import * as PSD3_ForceEngine_Events from "../PSD3.ForceEngine.Events/index.js";
-import * as PSD3_ForceEngine_Simulation from "../PSD3.ForceEngine.Simulation/index.js";
+import * as PSD3_Kernel_D3_Events from "../PSD3.Kernel.D3.Events/index.js";
+import * as PSD3_Kernel_D3_Simulation from "../PSD3.Kernel.D3.Simulation/index.js";
+import * as PSD3_Kernel_D3_SimulationGroup from "../PSD3.Kernel.D3.SimulationGroup/index.js";
 var wireUpCallbacks = function (listener) {
     return function (cbs) {
         return function __do() {
-            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_ForceEngine_Events.Tick.value))(cbs.onTick)();
-            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_ForceEngine_Events.Started.value))(cbs.onStart)();
-            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_ForceEngine_Events.Stopped.value))(cbs.onStop)();
+            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_Kernel_D3_Events.Tick.value))(cbs.onTick)();
+            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_Kernel_D3_Events.Started.value))(cbs.onStart)();
+            Effect_Ref.write(Halogen_Subscription.notify(listener)(PSD3_Kernel_D3_Events.Stopped.value))(cbs.onStop)();
             return Effect_Ref.write(function (alpha) {
-                return Halogen_Subscription.notify(listener)(new PSD3_ForceEngine_Events.AlphaDecayed(alpha));
+                return Halogen_Subscription.notify(listener)(new PSD3_Kernel_D3_Events.AlphaDecayed(alpha));
             })(cbs.onAlphaThreshold)();
         };
     };
@@ -21,25 +22,42 @@ var subscribeToSimulation = function (sim) {
     return function __do() {
         var v = Halogen_Subscription.create();
         (function () {
-            var v1 = PSD3_ForceEngine_Simulation.getCallbacks(sim);
+            var v1 = PSD3_Kernel_D3_Simulation.getCallbacks(sim);
             if (v1 instanceof Data_Maybe.Nothing) {
                 return Data_Unit.unit;
             };
             if (v1 instanceof Data_Maybe.Just) {
                 return wireUpCallbacks(v.listener)(v1.value0)();
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 63, column 3 - line 65, column 45): " + [ v1.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 75, column 3 - line 77, column 45): " + [ v1.constructor.name ]);
+        })();
+        return v.emitter;
+    };
+};
+var subscribeToGroup = function (group) {
+    return function __do() {
+        var v = Halogen_Subscription.create();
+        (function () {
+            var v1 = PSD3_Kernel_D3_SimulationGroup.getGroupCallbacks(group);
+            if (v1 instanceof Data_Maybe.Nothing) {
+                return Data_Unit.unit;
+            };
+            if (v1 instanceof Data_Maybe.Just) {
+                return wireUpCallbacks(v.listener)(v1.value0)();
+            };
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 120, column 3 - line 122, column 45): " + [ v1.constructor.name ]);
         })();
         return v.emitter;
     };
 };
 export {
-    subscribeToSimulation
+    subscribeToSimulation,
+    subscribeToGroup
 };
 export {
     AlphaDecayed,
     Started,
     Stopped,
     Tick
-} from "../PSD3.ForceEngine.Events/index.js";
+} from "../PSD3.Kernel.D3.Events/index.js";
 //# sourceMappingURL=index.js.map
