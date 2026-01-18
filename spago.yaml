@@ -30,3 +30,4 @@ package:
     - psd3-d3-kernel
     - psd3-simulation
     - refs
+    - web-pointerevents

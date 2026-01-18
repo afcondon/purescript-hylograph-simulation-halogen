@@ -10,7 +10,9 @@
             "maybe",
             "prelude",
             "psd3-d3-kernel",
-            "refs"
+            "psd3-simulation",
+            "refs",
+            "web-pointerevents"
           ],
           "build_plan": [
             "aff",
@@ -61,8 +63,8 @@
             "psd3-d3-kernel",
             "psd3-graph",
             "psd3-selection",
+            "psd3-simulation",
             "psd3-simulation-core",
-            "psd3-tree",
             "refs",
             "safe-coerce",
             "st",
@@ -80,6 +82,7 @@
             "web-events",
             "web-file",
             "web-html",
+            "web-pointerevents",
             "web-storage",
             "web-uievents"
           ]
@@ -651,11 +654,11 @@
       "psd3-selection": {
         "path": "../purescript-psd3-selection"
       },
+      "psd3-simulation": {
+        "path": "../purescript-psd3-simulation"
+      },
       "psd3-simulation-core": {
         "path": "../purescript-psd3-simulation-core"
-      },
-      "psd3-tree": {
-        "path": "../purescript-psd3-tree"
       }
     }
   },
@@ -1311,9 +1314,9 @@
         "prelude",
         "profunctor",
         "psd3-graph",
-        "psd3-tree",
         "strings",
         "transformers",
+        "tree-rose",
         "tuples",
         "typelevel-prelude",
         "unsafe-coerce",
@@ -1321,7 +1324,34 @@
         "web-dom",
         "web-events",
         "web-html",
+        "web-pointerevents",
         "web-uievents"
+      ]
+    },
+    "psd3-simulation": {
+      "type": "local",
+      "path": "../purescript-psd3-simulation",
+      "dependencies": [
+        "aff",
+        "arrays",
+        "console",
+        "effect",
+        "foldable-traversable",
+        "foreign-object",
+        "functions",
+        "integers",
+        "maybe",
+        "newtype",
+        "numbers",
+        "ordered-collections",
+        "partial",
+        "prelude",
+        "psd3-selection",
+        "refs",
+        "tuples",
+        "unsafe-coerce",
+        "web-dom",
+        "web-pointerevents"
       ]
     },
     "psd3-simulation-core": {
@@ -1337,18 +1367,6 @@
         "ordered-collections",
         "prelude",
         "refs"
-      ]
-    },
-    "psd3-tree": {
-      "type": "local",
-      "path": "../purescript-psd3-tree",
-      "dependencies": [
-        "arrays",
-        "foldable-traversable",
-        "lists",
-        "maybe",
-        "prelude",
-        "tree-rose"
       ]
     },
     "refs": {
@@ -1542,6 +1560,18 @@
         "web-dom",
         "web-file",
         "web-storage"
+      ]
+    },
+    "web-pointerevents": {
+      "type": "registry",
+      "version": "2.0.0",
+      "integrity": "sha256-uy1cI/Tck8Cf/MP0psvm2MLNxdijqfLZGLRq5FmuRh0=",
+      "dependencies": [
+        "effect",
+        "maybe",
+        "prelude",
+        "web-dom",
+        "web-uievents"
       ]
     },
     "web-storage": {
