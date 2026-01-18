@@ -2,32 +2,44 @@
 -- |
 -- | Provides subscription-based API for integrating simulations with Halogen components.
 -- |
--- | Single simulation usage:
+-- | ## Recommended: High-Level API with Unified Events
+-- |
 -- | ```purescript
+-- | import PSD3.Simulation (runSimulation, SimulationEvent(..))
+-- | import PSD3.ForceEngine.Halogen (toHalogenEmitter)
+-- |
 -- | handleAction Initialize = do
--- |   sim <- liftEffect $ Sim.create defaultConfig
--- |   emitter <- liftEffect $ subscribeToSimulation sim
--- |   void $ H.subscribe $ emitter <#> \event -> case event of
--- |     Sim.Tick -> UpdateNodePositions
--- |     Sim.Started -> SimStarted
--- |     Sim.Stopped -> SimStopped
--- |     Sim.AlphaDecayed alpha -> AlphaChanged alpha
+-- |   { handle, events } <- liftEffect $ runSimulation config
+-- |   halogenEmitter <- liftEffect $ toHalogenEmitter events
+-- |   void $ H.subscribe $ halogenEmitter <#> SimEvent
+-- |
+-- | handleAction (SimEvent event) = case event of
+-- |   Tick { alpha } -> H.modify_ _ { alpha = alpha }
+-- |   Completed -> liftEffect $ log "Done!"
+-- |   _ -> pure unit
 -- | ```
 -- |
--- | Simulation group usage (multiple synchronized simulations):
+-- | ## Legacy: Low-Level D3 Kernel API
+-- |
+-- | For advanced use cases requiring direct D3 callback control:
+-- |
 -- | ```purescript
 -- | handleAction Initialize = do
 -- |   callbacks <- liftEffect defaultCallbacks
--- |   group <- liftEffect $ createGroupWithCallbacks 6 defaultConfig callbacks
--- |   emitter <- liftEffect $ subscribeToGroup group
--- |   void $ H.subscribe $ emitter <#> \_ -> SimTick
--- |   liftEffect $ startGroup group
+-- |   sim <- liftEffect $ createWithCallbacks config callbacks
+-- |   emitter <- liftEffect $ subscribeToSimulation sim
+-- |   void $ H.subscribe $ emitter <#> SimulationEvent
 -- | ```
 module PSD3.ForceEngine.Halogen
-  ( subscribeToSimulation
+  ( -- * High-Level API (recommended)
+    toHalogenEmitter
+  , module SimEmitterExport
+
+    -- * Legacy D3 Kernel API (for advanced use)
+  , subscribeToSimulation
   , subscribeToGroup
-  -- Re-export event types for convenience
-  , module Events
+  , D3SimulationEvent(..)
+  , D3SimulationCallbacks
   ) where
 
 import Prelude
@@ -35,11 +47,64 @@ import Prelude
 import Effect (Effect)
 import Effect.Ref as Ref
 import Halogen.Subscription as HS
-import PSD3.Kernel.D3.Events (SimulationEvent(..), SimulationCallbacks) as Events
-import PSD3.Kernel.D3.Events (SimulationEvent(..))
+import Data.Maybe (Maybe(..))
+
+-- High-level unified emitter (from PSD3.Simulation)
+import PSD3.Simulation.Emitter as Emitter
+import PSD3.Simulation.Emitter (SimulationEmitter)
+import PSD3.Simulation.Emitter (SimulationEmitter) as SimEmitterExport
+import PSD3.Simulation (SimulationEvent) as HighLevel
+
+-- Legacy D3 kernel events (renamed to avoid conflict)
+import PSD3.Kernel.D3.Events (SimulationEvent, SimulationCallbacks)
+import PSD3.Kernel.D3.Events (SimulationEvent(..)) as D3
 import PSD3.Kernel.D3.Simulation (Simulation, getCallbacks)
 import PSD3.Kernel.D3.SimulationGroup (SimulationGroup, getGroupCallbacks)
-import Data.Maybe (Maybe(..))
+
+-- Re-export legacy types with prefixed names
+type D3SimulationEvent = SimulationEvent
+type D3SimulationCallbacks = SimulationCallbacks
+
+-- =============================================================================
+-- High-Level API (Recommended)
+-- =============================================================================
+
+-- | Convert a framework-agnostic SimulationEmitter to Halogen's Emitter.
+-- |
+-- | This is the recommended way to integrate simulations with Halogen.
+-- | It works with both D3 and WASM engines using the same event model.
+-- |
+-- | ```purescript
+-- | import PSD3.Simulation (runSimulation, SimulationEvent(..))
+-- | import PSD3.ForceEngine.Halogen (toHalogenEmitter)
+-- |
+-- | handleAction Initialize = do
+-- |   { handle, events } <- liftEffect $ runSimulation config
+-- |   halogenEmitter <- liftEffect $ toHalogenEmitter events
+-- |   void $ H.subscribe $ halogenEmitter <#> SimEvent
+-- |
+-- | handleAction (SimEvent event) = case event of
+-- |   Tick { alpha, nodeCount } -> do
+-- |     H.modify_ _ { alpha = alpha }
+-- |   Completed -> do
+-- |     liftEffect $ log "Simulation converged!"
+-- |   Started -> pure unit
+-- |   Stopped -> pure unit
+-- | ```
+toHalogenEmitter :: SimulationEmitter -> Effect (HS.Emitter HighLevel.SimulationEvent)
+toHalogenEmitter simEmitter = do
+  -- Create Halogen emitter/listener pair
+  { emitter, listener } <- HS.create
+
+  -- Subscribe to simulation events and forward to Halogen listener
+  _ <- Emitter.subscribe simEmitter \event ->
+    HS.notify listener event
+
+  pure emitter
+
+-- =============================================================================
+-- Legacy D3 Kernel API (for advanced/backwards-compatible use)
+-- =============================================================================
 
 -- | Create a Halogen subscription emitter for simulation events.
 -- |
@@ -67,7 +132,7 @@ import Data.Maybe (Maybe(..))
 -- | ```
 subscribeToSimulation :: forall row linkRow.
   Simulation row linkRow
-  -> Effect (HS.Emitter SimulationEvent)
+  -> Effect (HS.Emitter D3SimulationEvent)
 subscribeToSimulation sim = do
   { emitter, listener } <- HS.create
 
@@ -79,19 +144,19 @@ subscribeToSimulation sim = do
   pure emitter
 
 -- | Internal: Wire up simulation callbacks to emit events
-wireUpCallbacks :: HS.Listener SimulationEvent -> Events.SimulationCallbacks -> Effect Unit
+wireUpCallbacks :: HS.Listener D3SimulationEvent -> D3SimulationCallbacks -> Effect Unit
 wireUpCallbacks listener cbs = do
   -- Wire tick callback
-  Ref.write (HS.notify listener Tick) cbs.onTick
+  Ref.write (HS.notify listener D3.Tick) cbs.onTick
 
   -- Wire start callback
-  Ref.write (HS.notify listener Started) cbs.onStart
+  Ref.write (HS.notify listener D3.Started) cbs.onStart
 
   -- Wire stop callback
-  Ref.write (HS.notify listener Stopped) cbs.onStop
+  Ref.write (HS.notify listener D3.Stopped) cbs.onStop
 
   -- Wire alpha threshold callback
-  Ref.write (\alpha -> HS.notify listener (AlphaDecayed alpha)) cbs.onAlphaThreshold
+  Ref.write (\alpha -> HS.notify listener (D3.AlphaDecayed alpha)) cbs.onAlphaThreshold
 
 -- | Create a Halogen subscription emitter for a simulation group.
 -- |
@@ -112,7 +177,7 @@ wireUpCallbacks listener cbs = do
 -- | ```
 subscribeToGroup :: forall row linkRow.
   SimulationGroup row linkRow
-  -> Effect (HS.Emitter SimulationEvent)
+  -> Effect (HS.Emitter D3SimulationEvent)
 subscribeToGroup group = do
   { emitter, listener } <- HS.create
 
