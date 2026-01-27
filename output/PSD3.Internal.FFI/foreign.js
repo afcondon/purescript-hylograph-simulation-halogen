@@ -1,780 +1,71 @@
-// D3 dependencies: d3-selection, d3-drag, d3-force, d3-hierarchy, d3-shape, d3-chord, d3-zoom, d3-ease, d3-scale-chromatic, d3-scale
-import { select, selectAll } from "d3-selection";
-import { drag } from "d3-drag";
+// D3 dependencies: d3-force, d3-shape (arc only), d3-scale-chromatic, d3-scale
+// NOTE: d3-selection REMOVED - use native DOM APIs
+// NOTE: d3-drag REMOVED - use PSD3.Interaction.Pointer for native drag
+// NOTE: d3-zoom REMOVED - use PSD3.Interaction.Zoom for native zoom
+// NOTE: d3-chord removed - use DataViz.Layout.Chord from psd3-layout
+// NOTE: d3-hierarchy removed - use DataViz.Layout.Hierarchy.Pack from psd3-layout
+// NOTE: d3-ease removed - unused (PureScript Transition.Engine handles easing)
+// NOTE: d3-shape links (linkHorizontal/Vertical/Radial) removed - Path DSL handles links
 import {
   forceSimulation, forceCenter, forceCollide, forceLink,
   forceManyBody, forceRadial, forceX, forceY
 } from "d3-force";
-import {
-  hierarchy, cluster, tree, pack, treemap, partition
-} from "d3-hierarchy";
-import {
-  linkHorizontal, linkVertical, linkRadial, arc
-} from "d3-shape";
-import { chord, ribbon } from "d3-chord";
-import { zoom } from "d3-zoom";
-import { easeCubicOut, easeLinear, easeQuadInOut, easeBounceOut } from "d3-ease";
+import { arc } from "d3-shape";
 import { schemeCategory10, schemeTableau10, interpolateRdYlGn, interpolateViridis } from "d3-scale-chromatic";
 import { scaleLinear, scaleOrdinal } from "d3-scale";
 
 // =============================================================================
 // Direct D3 Re-exports (for demo components to use without direct D3 imports)
 // =============================================================================
-export { select, selectAll, drag, zoom };
-export { easeCubicOut, easeLinear, easeQuadInOut, easeBounceOut };
+// NOTE: select/selectAll removed - use native DOM document.querySelector/querySelectorAll
 export { schemeCategory10, schemeTableau10, interpolateRdYlGn, interpolateViridis };
 export { scaleLinear, scaleOrdinal };
 
 const debug = false
-export const emptyD3Data_ = null
-export function d3Append_(element) { return selection => { return selection.append(element) } }
-export function d3Data_(data) { return selection => { return selection.data(data) } }
-export function d3DataWithKeyFunction_(data) { return keyFn => selection => { return selection.data(data, keyFn) } }
-export function d3DataWithFunction_(extractFn) { return keyFn => selection => { return selection.data(extractFn, keyFn) } }
-export function d3EnterAndAppend_(element) { return selection => { return selection.enter().append(element) } }
-export function d3GetExitSelection_(selection) { return selection.exit() }
-export function d3GetEnterSelection_(selection) { return selection.enter() }
-export function d3GetSelectionData_(selection) { return selection.data() }
-export function d3FilterSelection_(selection) { return selector => selection.filter(selector) }
-export function d3LowerSelection_(selection) { return selection.lower() }
-export function d3MergeSelectionWith_(enter) { return update => { return enter.merge(update); } }
-export function d3OrderSelection_(selection) { return selection.order() }
-export function d3RaiseSelection_(selection) { return selection.raise() }
-export function d3RemoveSelection_(selection) { return selection.remove() }
-export function d3SelectAllInDOM_(selector) { return selectAll(selector) }
-export function d3SelectFirstInDOM_(selector) { return select(selector) }
-export function d3SelectionIsEmpty_(selection) { return selection.empty() }
-export function d3SelectionSelect_(selector) { return selection => { return selection.select(selector) } }
-export function d3SelectionSelectAll_(selector) { return selection => { return selection.selectAll(selector) } }
-export function d3SetAttr_(name) { return value => selection => { return selection.attr(name, value) } }
-export function d3SetHTML_(value) { return selection => { return selection.html(value) } }
-export function d3SetProperty_(value) { return selection => { return selection.property(value) } }
-export function d3SetText_(value) { return selection => { return selection.text(value) } }
-export function d3SortSelection_(selection) { return compare => selection.sort(compare) }
-export function simulationDrag_(label) { return selection => simulation => dragFn => selection.call(dragFn(label, simulation)) }
-export function disableDrag_(selection) { return selection.on('.drag', null) }
+
+// NOTE: Most d3-selection wrapper functions have been removed.
+// Selection operations now use PureScript web-dom libraries directly.
+// Drag behaviors now use native Pointer Events via PSD3.Interaction.Pointer.
+
 export function getIndexFromDatum_(datum) { return (typeof datum.index == `undefined`) ? "?" : datum.index }
-export function selectionOn_(selection) { return event => callback => { return selection.on(event, callback) } }
+
+// DEPRECATED: selectionOn_ - use element.addEventListener() directly
+export function selectionOn_(selection) {
+  console.warn('[DEPRECATED] selectionOn_ is deprecated. Use element.addEventListener() instead.');
+  return event => callback => {
+    // For backward compat, try to call .on() if it exists
+    if (selection && typeof selection.on === 'function') {
+      return selection.on(event, callback);
+    }
+    console.error('selectionOn_: selection does not have .on() method');
+    return selection;
+  };
+}
+
+// DEPRECATED: d3AddTransition_ - use pure PureScript transitions or Web Animations API
 export function d3AddTransition_(selection) {
+  console.warn('[DEPRECATED] d3AddTransition_ is deprecated. Use withPureTransitions or Web Animations API.');
   return transition => {
-    var handle
-    if (transition.name == '') {
-      handle = selection.transition()
-      // if transition is unnamed we configure it...
-      if (transition.duration != 0) {
-        handle.duration(transition.duration)
+    // For backward compat, try to call .transition() if it exists
+    if (selection && typeof selection.transition === 'function') {
+      var handle;
+      if (transition.name == '') {
+        handle = selection.transition();
+        if (transition.duration != 0) {
+          handle.duration(transition.duration);
+        }
+        if (transition.delay != 0) {
+          handle.delay(transition.delay);
+        }
+      } else {
+        handle = selection.transition(transition.name);
       }
-      if (transition.delay != 0) {
-        handle.delay(transition.delay)
-      }
-    } else {
-      handle = selection.transition(transition.name)
+      return handle;
     }
-    return handle
-  }
-}
-// *****************************************************************************************************************
-// *****  there will either need to be quite a range of these functions or a way of writing them in Purs     *******
-// *****  this is really down in the weeds of D3 without supporting abstractions in the PS library           *******
-// *****  CONCRETE EXAMPLE: this defaults to updating fx but in Spago example position is on parent, using   *******
-// *****  transforms to move both circle and label together (only way to position a <group> in SVG)
-// *****************************************************************************************************************
-export function simdrag_(label, simulation) {
-  function dragstarted(event) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    event.subject.fx = event.subject.x;
-    event.subject.fy = event.subject.y;
-  }
-  function dragged(event) {
-    event.subject.fx = event.x;
-    event.subject.fy = event.y;
-  }
-  function dragended(event) {
-    if (!event.active) simulation.alphaTarget(0);
-    event.subject.fx = null;
-    event.subject.fy = null;
-  }
-  return drag()
-    .on('start.' + label, dragstarted)
-    .on('drag.' + label, dragged)
-    .on('end.' + label, dragended);
-}
-
-// Drag that only allows horizontal movement (preserves fy)
-export function simdragHorizontal_(label, simulation) {
-  function dragstarted(event) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    event.subject.fx = event.subject.x;
-    // Don't touch fy - keep it pinned
-  }
-  function dragged(event) {
-    event.subject.fx = event.x;
-    // Don't touch fy - keep it pinned
-  }
-  function dragended(event) {
-    if (!event.active) simulation.alphaTarget(0);
-    event.subject.fx = null;
-    // Don't touch fy - keep it pinned
-  }
-  return drag()
-    .on('start.' + label, dragstarted)
-    .on('drag.' + label, dragged)
-    .on('end.' + label, dragended);
-}
-// Helper functions for highlighting connected nodes
-export function highlightConnectedNodes_(selection) {
-  return connectedIds => {
-    // Convert PureScript array to Set for fast lookup
-    const connectedSet = new Set(connectedIds);
-    selection.selectAll('.node-group')
-      .classed('highlighted', d => connectedSet.has(d.id))
-      .classed('dimmed', d => !connectedSet.has(d.id));
+    console.error('d3AddTransition_: selection does not have .transition() method');
+    return selection;
   };
 }
-
-export function clearHighlights_(selection) {
-  selection.selectAll('.node-group')
-    .classed('highlighted', false)
-    .classed('dimmed', false);
-}
-
-// Unpin all nodes by setting fy to null
-export function unpinAllNodes_(simulation) {
-  simulation.nodes().forEach(node => {
-    node.fx = null;
-    node.fy = null;
-  });
-  // Reheat the simulation to see the effect
-  simulation.alpha(0.3).restart();
-}
-
-// Update bubble node radii based on expanded state and reheat simulation
-export function updateBubbleRadii_(simulation) {
-  return nodeRadiusFn => {
-    // Select all circles and update their radius
-    selectAll('.bubble-graph .node-group circle.node-circle')
-      .attr('r', d => nodeRadiusFn(d.expanded)(d.loc))
-
-    // Reheat the simulation so collision forces update
-    simulation.alpha(0.3).restart()
-  }
-}
-
-// Color mapping for declaration kinds
-function declarationColor(kind) {
-  switch(kind) {
-    case 'value':         return '#2196F3'  // Blue - functions/values
-    case 'externValue':   return '#00BCD4'  // Cyan - foreign functions
-    case 'data':          return '#4CAF50'  // Green - data types
-    case 'typeClass':     return '#9C27B0'  // Purple - type classes
-    case 'typeSynonym':   return '#FF9800'  // Orange - type synonyms
-    case 'alias':         return '#FF9800'  // Orange - aliases
-    case 'externData':    return '#F44336'  // Red - foreign data
-    case 'typeClassInstance': return '#E91E63'  // Pink - instances
-    default:              return '#757575'  // Gray - unknown
-  }
-}
-
-// Highlight dependencies when hovering over a declaration
-function highlightDependencies(qualifiedName, functionCallsData, isHighlighted) {
-  if (!functionCallsData || !functionCallsData.functions) {
-    console.log('No function calls data available')
-    return
-  }
-
-  // Find the function in the call graph
-  const funcEntry = functionCallsData.functions.find(f => f.key === qualifiedName)
-
-  if (!funcEntry) {
-    console.log(`Function ${qualifiedName} not found in call graph`)
-    return
-  }
-
-  const funcInfo = funcEntry.value
-  const relatedNames = new Set()
-
-  // Add all functions this function calls (outbound)
-  if (funcInfo.calls) {
-    funcInfo.calls.forEach(call => {
-      const targetQualifiedName = `${call.targetModule}.${call.target}`
-      relatedNames.add(targetQualifiedName)
-    })
-  }
-
-  // Add all functions that call this function (inbound)
-  if (funcInfo.calledBy) {
-    funcInfo.calledBy.forEach(callerName => {
-      relatedNames.add(callerName)
-    })
-  }
-
-  console.log(`Highlighting ${relatedNames.size} related functions for ${qualifiedName}`)
-
-  // Highlight all related declaration circles
-  relatedNames.forEach(name => {
-    const selector = `.decl-circle[data-qualified-name="${name}"]`
-    selectAll(selector)
-      .classed('dep-highlighted', true)
-      .attr('stroke', '#FFD700')  // Gold stroke
-      .attr('stroke-width', 3)
-      .raise()  // Bring to front
-  })
-
-  // Also highlight the hovered circle itself with a different style
-  const hoveredSelector = `.decl-circle[data-qualified-name="${qualifiedName}"]`
-  selectAll(hoveredSelector)
-    .classed('dep-source', true)
-    .attr('stroke', '#FF4500')  // Orange-red stroke
-    .attr('stroke-width', 4)
-    .raise()
-}
-
-// Clear dependency highlights
-function clearDependencyHighlights() {
-  selectAll('.decl-circle.dep-highlighted')
-    .classed('dep-highlighted', false)
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 1)
-
-  selectAll('.decl-circle.dep-source')
-    .classed('dep-source', false)
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 1)
-}
-
-// Categorize declarations into groups
-function categorizeDeclarations(declarations) {
-  const categories = {
-    dataTypes: [],
-    instances: [],
-    functions: []
-  }
-
-  declarations.forEach(decl => {
-    switch(decl.kind) {
-      case 'data':
-      case 'typeSynonym':
-      case 'alias':
-      case 'externData':
-        categories.dataTypes.push(decl)
-        break
-      case 'typeClassInstance':
-        categories.instances.push(decl)
-        break
-      case 'value':
-      case 'typeClass':
-      default:
-        categories.functions.push(decl)
-        break
-    }
-  })
-
-  return categories
-}
-
-// Update node expansion state - show/hide declaration circles
-export function updateNodeExpansion_(simulation) {
-  return nodeRadiusFn => declarationsData => functionCallsData => clickedNodeData => {
-    const moduleName = clickedNodeData.name
-    const isExpanded = clickedNodeData.expanded
-
-    // Find the node group for this module
-    const nodeGroup = selectAll('.bubble-graph .node-group')
-      .filter(d => d.id === moduleName)
-
-    if (isExpanded) {
-      // Find declarations for this module
-      const moduleDecls = declarationsData.modules.find(m => m.name === moduleName)
-      if (!moduleDecls || !moduleDecls.declarations || moduleDecls.declarations.length === 0) {
-        console.log(`No declarations found for ${moduleName}`)
-        return
-      }
-
-      const declarations = moduleDecls.declarations
-      console.log(`Expanding ${moduleName} with ${declarations.length} declarations`)
-
-      // Categorize declarations into groups
-      const categories = categorizeDeclarations(declarations)
-
-      // Create three-layer hierarchy: Module → Categories → Items
-      const categoryChildren = []
-
-      if (categories.dataTypes.length > 0) {
-        categoryChildren.push({
-          name: 'Data Types',
-          isCategory: true,
-          children: categories.dataTypes.map(d => ({
-            name: d.title,
-            kind: d.kind,
-            isCategory: false,
-            value: 1
-          }))
-        })
-      }
-
-      if (categories.instances.length > 0) {
-        categoryChildren.push({
-          name: 'Instances',
-          isCategory: true,
-          children: categories.instances.map(d => ({
-            name: d.title,
-            kind: d.kind,
-            isCategory: false,
-            value: 1
-          }))
-        })
-      }
-
-      if (categories.functions.length > 0) {
-        categoryChildren.push({
-          name: 'Functions',
-          isCategory: true,
-          children: categories.functions.map(d => ({
-            name: d.title,
-            kind: d.kind,
-            isCategory: false,
-            value: 1
-          }))
-        })
-      }
-
-      const hierarchyData = {
-        name: moduleName,
-        children: categoryChildren
-      }
-
-      const root = hierarchy(hierarchyData)
-        .sum(d => d.value)
-
-      // Compute pack layout (size based on expanded radius)
-      const expandedRadius = nodeRadiusFn(true)(clickedNodeData.loc)
-      const packLayout = pack()
-        .size([expandedRadius * 2, expandedRadius * 2])
-        .padding(3)  // More padding for labels
-
-      packLayout(root)
-
-      // Get leaf nodes (the declarations)
-      const leaves = root.leaves()
-
-      // Create a map from declaration name to position for link drawing
-      const declPositions = new Map()
-      leaves.forEach(leaf => {
-        declPositions.set(leaf.data.name, {
-          x: leaf.x - expandedRadius,
-          y: leaf.y - expandedRadius
-        })
-      })
-
-      // Find intra-module function calls
-      const intraModuleLinks = []
-      if (functionCallsData && functionCallsData.functions) {
-        functionCallsData.functions.forEach(fn => {
-          const funcInfo = fn.value
-          if (funcInfo.module === moduleName) {
-            funcInfo.calls.forEach(call => {
-              // Only show links within the same module
-              if (call.targetModule === moduleName && !call.isCrossModule) {
-                const sourceName = funcInfo.name
-                const targetName = call.target
-
-                const sourcePos = declPositions.get(sourceName)
-                const targetPos = declPositions.get(targetName)
-
-                if (sourcePos && targetPos && sourceName !== targetName) {
-                  intraModuleLinks.push({
-                    source: sourceName,
-                    target: targetName,
-                    sourcePos,
-                    targetPos
-                  })
-                }
-              }
-            })
-          }
-        })
-      }
-
-      console.log(`Found ${intraModuleLinks.length} intra-module links for ${moduleName}`)
-
-      // Add dependency arrows before circles (so they're behind)
-      const linksGroup = nodeGroup.selectAll('g.decl-links')
-        .data([0])  // Single element to create the group once
-        .enter()
-        .append('g')
-        .attr('class', 'decl-links')
-        .lower()  // Put links behind circles
-
-      const arrows = nodeGroup.select('g.decl-links')
-        .selectAll('path.decl-link')
-        .data(intraModuleLinks, d => `${d.source}-${d.target}`)
-
-      arrows.enter()
-        .append('path')
-        .attr('class', 'decl-link')
-        .attr('d', d => {
-          // Create a curved path from source to target
-          const dx = d.targetPos.x - d.sourcePos.x
-          const dy = d.targetPos.y - d.sourcePos.y
-          const dr = Math.sqrt(dx * dx + dy * dy) * 0.7  // Curve factor
-          return `M${d.sourcePos.x},${d.sourcePos.y}A${dr},${dr} 0 0,1 ${d.targetPos.x},${d.targetPos.y}`
-        })
-        .attr('stroke', '#666')
-        .attr('stroke-width', 1)
-        .attr('stroke-opacity', 0.4)
-        .attr('fill', 'none')
-
-      // Get ALL nodes (not just leaves) - this includes category bubbles
-      const allNodes = root.descendants().filter(d => d.depth > 0) // Skip root module node
-
-      // Add groups for both category bubbles and declaration circles
-      const nodeGroups = nodeGroup.selectAll('g.decl-group')
-        .data(allNodes, d => d.data.name)
-
-      const nodeGroupsEnter = nodeGroups.enter()
-        .append('g')
-        .attr('class', d => d.data.isCategory ? 'category-group' : 'decl-group')
-        .attr('transform', d => `translate(${d.x - expandedRadius}, ${d.y - expandedRadius})`)
-
-      // Add circles (styled differently for categories vs declarations)
-      const circles = nodeGroupsEnter.append('circle')
-        .attr('class', d => d.data.isCategory ? 'category-circle' : 'decl-circle')
-        .attr('r', d => d.r)
-        .attr('fill', d => {
-          // Category bubbles: neutral gray
-          // Declaration circles: colored by kind
-          return d.data.isCategory ? '#e0e0e0' : declarationColor(d.data.kind)
-        })
-        .attr('opacity', d => d.data.isCategory ? 0.3 : 0.8)  // Categories more transparent
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 1)
-
-      // Add data attribute with qualified name for declarations (module.name)
-      circles.filter(d => !d.data.isCategory)
-        .attr('data-qualified-name', d => `${moduleName}.${d.data.name}`)
-
-      // Add hover handlers to declaration circles
-      circles.filter(d => !d.data.isCategory)
-        .on('mouseenter', function(event, d) {
-          const qualifiedName = `${moduleName}.${d.data.name}`
-          highlightDependencies(qualifiedName, functionCallsData, true)
-        })
-        .on('mouseleave', function(event, d) {
-          clearDependencyHighlights()
-        })
-
-      circles.append('title')
-        .text(d => d.data.isCategory
-          ? d.data.name  // Category name only
-          : `${d.data.name} (${d.data.kind})`  // Declaration with kind
-        )
-
-      // Add text labels ONLY for declarations (not categories)
-      nodeGroupsEnter.filter(d => !d.data.isCategory)
-        .append('text')
-        .attr('class', 'decl-label')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '0.35em')
-        .attr('font-size', d => Math.min(d.r / 3, 10) + 'px')  // Scale font with circle size
-        .attr('fill', '#fff')
-        .attr('pointer-events', 'none')
-        .text(d => {
-          // Truncate long names to fit in circle
-          const maxChars = Math.floor(d.r / 3)
-          return d.data.name.length > maxChars
-            ? d.data.name.substring(0, maxChars) + '...'
-            : d.data.name
-        })
-
-      // Add arrowhead marker definition (if not already defined)
-      if (!select('defs marker#arrowhead').node()) {
-        select('.bubble-graph').append('defs')
-          .append('marker')
-          .attr('id', 'arrowhead')
-          .attr('viewBox', '0 -5 10 10')
-          .attr('refX', 5)
-          .attr('refY', 0)
-          .attr('markerWidth', 6)
-          .attr('markerHeight', 6)
-          .attr('orient', 'auto')
-          .append('path')
-          .attr('d', 'M0,-5L10,0L0,5')
-          .attr('fill', '#666')
-      }
-
-    } else {
-      // Remove declaration groups and links
-      nodeGroup.selectAll('g.decl-group').remove()
-      nodeGroup.selectAll('g.decl-links').remove()
-    }
-
-    // Update main circle radius
-    nodeGroup.select('circle.node-circle')
-      .attr('r', nodeRadiusFn(isExpanded)(clickedNodeData.loc))
-
-    // Reheat simulation
-    simulation.alpha(0.3).restart()
-  }
-}
-
-// Unsafe helper to set a field on a JavaScript object
-export function unsafeSetField_(field) {
-  return value => obj => () => {
-    obj[field] = value
-  }
-}
-
-// Expand a node by its ID (used for expanding connected nodes)
-export function expandNodeById_(simulation) {
-  return nodeRadiusFn => declarationsData => functionCallsData => nodeId => shouldExpand => () => {
-    // Find the node in the simulation
-    const nodes = simulation.nodes()
-    const node = nodes.find(n => n.id === nodeId)
-
-    if (!node) {
-      console.log(`Node ${nodeId} not found in simulation`)
-      return
-    }
-
-    // Only toggle if the current state is different from desired state
-    if (node.expanded !== shouldExpand) {
-      node.expanded = shouldExpand
-      console.log(`${nodeId} ${shouldExpand ? 'expanded' : 'collapsed'} via expandNodeById`)
-
-      // Call the expansion update
-      updateNodeExpansion_(simulation)(nodeRadiusFn)(declarationsData)(functionCallsData)(node)
-    }
-  }
-}
-
-// Add arrow marker definition for module-level links
-export function addModuleArrowMarker_(svgSelection) {
-  return () => {
-    // Check if marker already exists
-    // Note: svgSelection is already a D3 selection, don't wrap it again
-    if (!svgSelection.select('defs marker#module-arrow').node()) {
-      svgSelection.append('defs')
-        .append('marker')
-        .attr('id', 'module-arrow')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 15)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
-        .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#999')
-    }
-  }
-}
-
-// Draw inter-module declaration links between expanded modules
-export function drawInterModuleDeclarationLinks_(zoomGroupSelection) {
-  return nodeRadiusFn => declarationsData => functionCallsData => () => {
-    // Find all expanded module nodes
-    const expandedModules = []
-    selectAll('.bubble-graph .node-group').each(function(d) {
-      if (d && d.expanded) {
-        const moduleDecls = declarationsData.modules.find(m => m.name === d.name)
-        if (moduleDecls && moduleDecls.declarations) {
-          const expandedRadius = nodeRadiusFn(true)(d.loc)
-
-          // Build declaration position map for this module (using same three-layer structure)
-          const categories = categorizeDeclarations(moduleDecls.declarations)
-          const categoryChildren = []
-
-          if (categories.dataTypes.length > 0) {
-            categoryChildren.push({
-              name: 'Data Types',
-              isCategory: true,
-              children: categories.dataTypes.map(decl => ({
-                name: decl.title,
-                kind: decl.kind,
-                isCategory: false,
-                value: 1
-              }))
-            })
-          }
-
-          if (categories.instances.length > 0) {
-            categoryChildren.push({
-              name: 'Instances',
-              isCategory: true,
-              children: categories.instances.map(decl => ({
-                name: decl.title,
-                kind: decl.kind,
-                isCategory: false,
-                value: 1
-              }))
-            })
-          }
-
-          if (categories.functions.length > 0) {
-            categoryChildren.push({
-              name: 'Functions',
-              isCategory: true,
-              children: categories.functions.map(decl => ({
-                name: decl.title,
-                kind: decl.kind,
-                isCategory: false,
-                value: 1
-              }))
-            })
-          }
-
-          const hierarchyData = {
-            name: d.name,
-            children: categoryChildren
-          }
-
-          const root = hierarchy(hierarchyData).sum(node => node.value)
-          const packLayout = pack()
-            .size([expandedRadius * 2, expandedRadius * 2])
-            .padding(3)
-          packLayout(root)
-
-          const declPositions = new Map()
-          root.leaves().forEach(leaf => {
-            declPositions.set(leaf.data.name, {
-              x: leaf.x - expandedRadius,
-              y: leaf.y - expandedRadius
-            })
-          })
-
-          expandedModules.push({
-            moduleName: d.name,
-            moduleX: d.x,
-            moduleY: d.y,
-            declPositions
-          })
-        }
-      }
-    })
-
-    console.log(`Found ${expandedModules.length} expanded modules`)
-
-    // Find all cross-module links between expanded modules
-    const interModuleLinks = []
-    if (functionCallsData && functionCallsData.functions) {
-      functionCallsData.functions.forEach(fn => {
-        const funcInfo = fn.value
-        const sourceModule = expandedModules.find(m => m.moduleName === funcInfo.module)
-
-        if (sourceModule) {
-          funcInfo.calls.forEach(call => {
-            if (call.isCrossModule) {
-              const targetModule = expandedModules.find(m => m.moduleName === call.targetModule)
-
-              if (targetModule) {
-                const sourcePos = sourceModule.declPositions.get(funcInfo.name)
-                const targetPos = targetModule.declPositions.get(call.target)
-
-                if (sourcePos && targetPos) {
-                  interModuleLinks.push({
-                    sourceModule: funcInfo.module,
-                    targetModule: call.targetModule,
-                    source: funcInfo.name,
-                    target: call.target,
-                    sourceX: sourceModule.moduleX + sourcePos.x,
-                    sourceY: sourceModule.moduleY + sourcePos.y,
-                    targetX: targetModule.moduleX + targetPos.x,
-                    targetY: targetModule.moduleY + targetPos.y
-                  })
-                }
-              }
-            }
-          })
-        }
-      })
-    }
-
-    console.log(`Found ${interModuleLinks.length} inter-module declaration links`)
-
-    // Create or update inter-module links group
-    // Note: zoomGroupSelection is already a D3 selection, don't wrap it again
-    let linksGroup = zoomGroupSelection.select('g.inter-module-decl-links')
-    if (linksGroup.empty()) {
-      linksGroup = zoomGroupSelection
-        .insert('g', 'g.link')  // Insert before module-level links
-        .attr('class', 'inter-module-decl-links')
-    }
-
-    // Bind data and update links
-    const paths = linksGroup.selectAll('path.inter-decl-link')
-      .data(interModuleLinks, d => `${d.sourceModule}:${d.source}-${d.targetModule}:${d.target}`)
-
-    // Remove old links
-    paths.exit().remove()
-
-    // Add new links
-    paths.enter()
-      .append('path')
-      .attr('class', 'inter-decl-link')
-      .attr('stroke', '#e91e63')  // Pink color to distinguish from module links
-      .attr('stroke-width', 2)
-      .attr('stroke-opacity', 0.6)
-      .attr('fill', 'none')
-      .merge(paths)
-      .attr('d', d => {
-        const dx = d.targetX - d.sourceX
-        const dy = d.targetY - d.sourceY
-        const dr = Math.sqrt(dx * dx + dy * dy) * 0.5
-        return `M${d.sourceX},${d.sourceY}A${dr},${dr} 0 0,1 ${d.targetX},${d.targetY}`
-      })
-  }
-}
-
-// Filter simulation to only keep nodes with IDs in the provided set
-// Also updates the DOM by removing filtered-out nodes and links
-export function filterToConnectedNodes_(simulation) {
-  return keyFn => nodeIds => {
-    // Get current nodes and links
-    const allNodes = simulation.nodes();
-    const linkForce = simulation.force(linksForceName_);
-    const allLinks = linkForce ? linkForce.links() : [];
-
-    // Create a Set for faster lookup
-    const idSet = new Set(nodeIds);
-
-    // Filter nodes - keep only those with IDs in the set
-    const filteredNodes = allNodes.filter(node => idSet.has(keyFn(node)));
-
-    // Filter links - keep only those where both source and target are in the set
-    const filteredLinks = allLinks.filter(link => {
-      const sourceId = typeof link.source === 'object' ? keyFn(link.source) : link.source;
-      const targetId = typeof link.target === 'object' ? keyFn(link.target) : link.target;
-      return idSet.has(sourceId) && idSet.has(targetId);
-    });
-
-    // Update simulation with filtered data
-    simulation.nodes(filteredNodes);
-    if (linkForce) {
-      linkForce.links(filteredLinks);
-    }
-
-    // Update DOM - remove nodes that aren't in the filtered set
-    // Find all node groups and filter them
-    select('div.svg-container')
-      .selectAll('g.node g.node-group')
-      .filter(d => !idSet.has(keyFn(d)))
-      .remove();
-
-    // Update DOM - remove links that aren't in the filtered set
-    select('div.svg-container')
-      .selectAll('g.link path')
-      .filter(d => {
-        const sourceId = typeof d.source === 'object' ? keyFn(d.source) : d.source;
-        const targetId = typeof d.target === 'object' ? keyFn(d.target) : d.target;
-        return !idSet.has(sourceId) || !idSet.has(targetId);
-      })
-      .remove();
-
-    // Reheat and restart
-    simulation.alpha(0.5).restart();
-  };
-}
-
 export const linksForceName_ = "links"
 export const dummyForceHandle_ = null
 export function disableTick_(simulation) { return name => { return simulation.on('tick.' + name, () => null) } }
@@ -883,37 +174,54 @@ export function readSimulationVariables_(simulation) {
   }
 }
 
-export function d3PreserveSimulationPositions_(selection) {
+// DEPRECATED: d3PreserveSimulationPositions_ - no longer uses D3 selections
+// The selection parameter is now expected to be an array of elements or nodes
+export function d3PreserveSimulationPositions_(selectionOrNodes) {
   return nodedata => keyFn => {
-    // create a map from our chosen id to the OLD obj reference, got from the data thats attached to selection
-    const oldNodeMap = new Map(selection.data().map(d => [keyFn(d), d]));
-    // create a map from our chosen id to the NEW / incoming obj reference
-    const newNodeMap = new Map(nodedata.map(d => [keyFn(d), d]));
-    // we need to copy the fx/fy (at least) from the updating data 
-    console.log(`FFI: d3PreserveSimulationPositions_ given ${nodedata.length} nodes, in selection ${selection.data().length}`);
+    console.warn('[DEPRECATED] d3PreserveSimulationPositions_ is deprecated. Use simulation.nodes() directly.');
+    // Try to get data from selection (D3) or assume it's already node data
+    let oldData;
+    if (selectionOrNodes && typeof selectionOrNodes.data === 'function') {
+      oldData = selectionOrNodes.data();
+    } else if (Array.isArray(selectionOrNodes)) {
+      oldData = selectionOrNodes;
+    } else {
+      oldData = [];
+    }
 
-    // REVIEW (also what if we wanted r, say, or x, to change???)
-    // we need to be able to specify which fields are to change, ideally, and which are not
+    const oldNodeMap = new Map(oldData.map(d => [keyFn(d), d]));
+    const newNodeMap = new Map(nodedata.map(d => [keyFn(d), d]));
+
     let updatedNodeData = nodedata.map(d => {
-      let id = keyFn(d)
-      let newNode = newNodeMap.get(id)
-      let shell = {}
+      let id = keyFn(d);
+      let newNode = newNodeMap.get(id);
+      let shell = {};
       if (newNode) {
-        console.log(`FFI: copying fx/fy from incoming node to old object (if present)`);
-        shell = { fx: newNode.fx, fy: newNode.fy, gridXY: newNode.gridXY, updated: true }
+        shell = { fx: newNode.fx, fy: newNode.fy, gridXY: newNode.gridXY, updated: true };
       }
-      return Object.assign(oldNodeMap.get(id) || d, shell)
+      return Object.assign(oldNodeMap.get(id) || d, shell);
     });
-    return updatedNodeData
-  }
+    return updatedNodeData;
+  };
 }
-export function d3PreserveLinkReferences_(link) {
+
+// DEPRECATED: d3PreserveLinkReferences_ - no longer uses D3 selections
+export function d3PreserveLinkReferences_(linkSelectionOrData) {
   return links => {
-    const old = new Map(link.data().map(d => [getLinkID_(d), d]));
+    console.warn('[DEPRECATED] d3PreserveLinkReferences_ is deprecated.');
+    let oldData;
+    if (linkSelectionOrData && typeof linkSelectionOrData.data === 'function') {
+      oldData = linkSelectionOrData.data();
+    } else if (Array.isArray(linkSelectionOrData)) {
+      oldData = linkSelectionOrData;
+    } else {
+      oldData = [];
+    }
+
+    const old = new Map(oldData.map(d => [getLinkID_(d), d]));
     let updatedLinkData = links.map(d => Object.assign(old.get(getLinkID_(d)) || d, {}));
-    // now, based on link signature, we should really de-swizzle here? and we may HAVE TO do so
-    return updatedLinkData
-  }
+    return updatedLinkData;
+  };
 }
 export function getIDsFromNodes_(nodes) {
   return keyFn => {
@@ -1105,23 +413,54 @@ export function onTick_(simulation) {
     return result;
   }
 }
+// DEPRECATED: defaultNodeTick_ - use native DOM tick handlers
+// This function expects a D3 selection. Consider using element arrays with native setAttribute.
 export function defaultNodeTick_(label) {
-  return simulation => nodeSelection => {
+  return simulation => nodeSelectionOrElements => {
+    console.warn('[DEPRECATED] defaultNodeTick_ is deprecated. Use native DOM tick handlers.');
     simulation.on('tick.' + label, () => {
-      nodeSelection.attr('cx', d => d.x)
-        .attr('cy', d => d.y)
-    })
-  }
+      // Try D3 selection API first, then fall back to element array
+      if (nodeSelectionOrElements && typeof nodeSelectionOrElements.attr === 'function') {
+        nodeSelectionOrElements.attr('cx', d => d.x).attr('cy', d => d.y);
+      } else if (nodeSelectionOrElements && nodeSelectionOrElements.forEach) {
+        nodeSelectionOrElements.forEach(el => {
+          const d = el.__data__;
+          if (d) {
+            el.setAttribute('cx', d.x);
+            el.setAttribute('cy', d.y);
+          }
+        });
+      }
+    });
+  };
 }
+
+// DEPRECATED: defaultLinkTick_ - use native DOM tick handlers
+// This function expects a D3 selection. Consider using element arrays with native setAttribute.
 export function defaultLinkTick_(label) {
-  return simulation => linksShown => {
+  return simulation => linksSelectionOrElements => {
+    console.warn('[DEPRECATED] defaultLinkTick_ is deprecated. Use native DOM tick handlers.');
     simulation.on('tick.' + label, () => {
-      linksShown.attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-    })
-  }
+      // Try D3 selection API first, then fall back to element array
+      if (linksSelectionOrElements && typeof linksSelectionOrElements.attr === 'function') {
+        linksSelectionOrElements
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+      } else if (linksSelectionOrElements && linksSelectionOrElements.forEach) {
+        linksSelectionOrElements.forEach(el => {
+          const d = el.__data__;
+          if (d && d.source && d.target) {
+            el.setAttribute('x1', d.source.x);
+            el.setAttribute('y1', d.source.y);
+            el.setAttribute('x2', d.target.x);
+            el.setAttribute('y2', d.target.y);
+          }
+        });
+      }
+    });
+  };
 }
 export function lookupForceByName_(simulation) {
   return name => {
@@ -1227,22 +566,9 @@ export function setInSimNodeFlag_(node) { node.inSim = true; return node }
 export function unsetInSimNodeFlag_(node) { node.inSim = false; return node }
 export function unpinNode_(node) { node.fx = null; node.fy = null; return node }
 // *****************************************************************************************************************
-// ************************** functions from d3js Chord module         *****************************************
+// ************************** Arc generator from d3-shape (used for pie/donut charts) ******************************
 // *****************************************************************************************************************
-export function chordLayout_(matrix) {
-  return chord()(matrix);
-}
-export function chordLayoutWithPadAngle_(matrix) {
-  return padAngle => chord().padAngle(padAngle)(matrix);
-}
-export function chordGroups_(chordLayout) { return chordLayout.groups }
-export function chordArray_(chordLayout) {
-  return Array.from(chordLayout);
-}
-export function ribbonGenerator_() { return ribbon() }
 export function arcGenerator_() { return arc() }
-export function ribbonPath_(generator) { return chord => generator(chord) }
 export function arcPath_(generator) { return group => generator(group) }
-export function setRibbonRadius_(generator) { return radius => { generator.radius(radius); return generator } }
 export function setArcInnerRadius_(generator) { return radius => { generator.innerRadius(radius); return generator } }
 export function setArcOuterRadius_(generator) { return radius => { generator.outerRadius(radius); return generator } }

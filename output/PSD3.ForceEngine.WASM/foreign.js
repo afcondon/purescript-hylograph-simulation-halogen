@@ -19,13 +19,16 @@ export function initWasm_(wasmUrl) {
       wasmModule = wasm;
       WasmSimulation = wasm.Simulation;
       console.log('WASM Force Engine initialized');
-    })()
-    .then(() => onSuccess()())
-    .catch(err => onError(err)());
+    })().then(
+      // Success handler - EffectFnAff callbacks handle the thunk internally
+      () => { onSuccess(); },
+      // Error handler - only for actual WASM load failures
+      (err) => { onError(err); }
+    );
 
     // Return canceler function (can't really cancel dynamic import)
     return function(cancelError, onCancelError, onCancelSuccess) {
-      onCancelSuccess()();
+      onCancelSuccess();
     };
   };
 }

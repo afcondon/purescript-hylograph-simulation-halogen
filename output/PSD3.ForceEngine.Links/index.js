@@ -20,7 +20,7 @@ var unsafeArrayIndex = function (arr) {
         if (v instanceof Data_Maybe.Nothing) {
             return Partial_Unsafe.unsafeCrashWith("swizzleLinks: Array index out of bounds: " + show(i));
         };
-        throw new Error("Failed pattern match at PSD3.ForceEngine.Links (line 115, column 26 - line 117, column 85): " + [ v.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.ForceEngine.Links (line 124, column 26 - line 126, column 85): " + [ v.constructor.name ]);
     };
 };
 var swizzleLinks = function (nodes) {

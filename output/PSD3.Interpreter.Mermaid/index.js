@@ -42,6 +42,9 @@ var showElement = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.Line) {
         return "line";
     };
+    if (v instanceof PSD3_Internal_Selection_Types.Polygon) {
+        return "polygon";
+    };
     if (v instanceof PSD3_Internal_Selection_Types.Path) {
         return "path";
     };
@@ -111,7 +114,7 @@ var formatAttrSource = function (name) {
         if (v instanceof PSD3_Internal_Attribute.OpaqueSource) {
             return name + "=OPAQUE";
         };
-        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 101, column 25 - line 107, column 36): " + [ v.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 104, column 25 - line 110, column 36): " + [ v.constructor.name ]);
     };
 };
 var formatAttribute = function (v) {
@@ -124,7 +127,13 @@ var formatAttribute = function (v) {
     if (v instanceof PSD3_Internal_Attribute.IndexedAttr) {
         return formatAttrSource(v.value0)(v.value1);
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 94, column 19 - line 97, column 70): " + [ v.constructor.name ]);
+    if (v instanceof PSD3_Internal_Attribute.AnimatedAttr) {
+        return v.value0.name + "(anim)";
+    };
+    if (v instanceof PSD3_Internal_Attribute.AnimatedCompound) {
+        return v.value0.name + "(compound-anim)";
+    };
+    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 95, column 19 - line 100, column 91): " + [ v.constructor.name ]);
 };
 var formatAttributeList = function (attrs) {
     if (attrs.length === 0) {
@@ -132,8 +141,8 @@ var formatAttributeList = function (attrs) {
     };
     return Data_Array.foldl(function (acc) {
         return function (attr) {
-            var $53 = acc === "";
-            if ($53) {
+            var $57 = acc === "";
+            if ($57) {
                 return formatAttribute(attr);
             };
             return acc + (", " + formatAttribute(attr));
@@ -155,15 +164,15 @@ var addNode = function (label) {
             var escapedLabel = escapeLabel(label);
             var line = "    " + (nodeName + ("[\"" + (escapedLabel + ("\"]:::" + (styleClass + "\x0a")))));
             return discard1(modify_(function (s) {
-                var $54 = {};
-                for (var $55 in s) {
-                    if ({}.hasOwnProperty.call(s, $55)) {
-                        $54[$55] = s[$55];
+                var $58 = {};
+                for (var $59 in s) {
+                    if ({}.hasOwnProperty.call(s, $59)) {
+                        $58[$59] = s[$59];
                     };
                 };
-                $54.nodeCounter = s.nodeCounter + 1 | 0;
-                $54.mermaidCode = s.mermaidCode + line;
-                return $54;
+                $58.nodeCounter = s.nodeCounter + 1 | 0;
+                $58.mermaidCode = s.mermaidCode + line;
+                return $58;
             }))(function () {
                 return pure(state.nodeCounter);
             });
@@ -176,14 +185,14 @@ var addEdge = function (fromId) {
         var fromName = "n" + show(fromId);
         var line = "    " + (fromName + (" --> " + (toName + "\x0a")));
         return modify_(function (s) {
-            var $57 = {};
-            for (var $58 in s) {
-                if ({}.hasOwnProperty.call(s, $58)) {
-                    $57[$58] = s[$58];
+            var $61 = {};
+            for (var $62 in s) {
+                if ({}.hasOwnProperty.call(s, $62)) {
+                    $61[$62] = s[$62];
                 };
             };
-            $57.mermaidCode = s.mermaidCode + line;
-            return $57;
+            $61.mermaidCode = s.mermaidCode + line;
+            return $61;
         });
     };
 };
@@ -206,11 +215,11 @@ var renderTree = function (tree) {
                 if (tree.value0.name instanceof Data_Maybe.Nothing) {
                     return showElement(tree.value0.elemType);
                 };
-                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 121, column 21 - line 123, column 47): " + [ tree.value0.name.constructor.name ]);
+                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 124, column 21 - line 126, column 47): " + [ tree.value0.name.constructor.name ]);
             })();
             var attrSuffix = (function () {
-                var $63 = Data_Array.length(tree.value0.attrs) > 0;
-                if ($63) {
+                var $67 = Data_Array.length(tree.value0.attrs) > 0;
+                if ($67) {
                     return " + [" + (formatAttributeList(tree.value0.attrs) + "]");
                 };
                 return "";
@@ -224,7 +233,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 132, column 5 - line 134, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 135, column 5 - line 137, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(traverseWithParent(nodeId)(tree.value0.children))(function () {
                         return pure2(nodeId);
@@ -242,7 +251,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 146, column 5 - line 148, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 149, column 5 - line 151, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(addNode("template(datum) \u2192")("templateNode"))(function (templateLabel) {
                         return discard2(addEdge(joinId)(templateLabel))(function () {
@@ -257,7 +266,7 @@ var renderTree = function (tree) {
                                         return pure2(Data_Unit.unit);
                                     });
                                 };
-                                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 155, column 5 - line 160, column 18): " + [ v.constructor.name ]);
+                                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 158, column 5 - line 163, column 18): " + [ v.constructor.name ]);
                             })())(function () {
                                 return pure2(joinId);
                             });
@@ -276,7 +285,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 170, column 5 - line 172, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 173, column 5 - line 175, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(addNode("decompose(datum) \u2192")("decomposeNode"))(function (decomposeId) {
                         return discard2(addEdge(joinId)(decomposeId))(function () {
@@ -299,9 +308,9 @@ var renderTree = function (tree) {
                                                     return pure2(Data_Unit.unit);
                                                 });
                                             };
-                                            throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 187, column 9 - line 192, column 22): " + [ v1.constructor.name ]);
+                                            throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 190, column 9 - line 195, column 22): " + [ v1.constructor.name ]);
                                         };
-                                        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 183, column 5 - line 192, column 22): " + [ v.constructor.name ]);
+                                        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 186, column 5 - line 195, column 22): " + [ v.constructor.name ]);
                                     })())(function () {
                                         return pure2(joinId);
                                     });
@@ -314,20 +323,20 @@ var renderTree = function (tree) {
         };
         if (tree instanceof PSD3_AST.UpdateJoin) {
             var behaviorInfo = (function () {
-                var $82 = Data_Maybe.isJust(tree.value0.behaviors.enter);
-                if ($82) {
+                var $86 = Data_Maybe.isJust(tree.value0.behaviors.enter);
+                if ($86) {
                     return "E";
                 };
                 return "";
             })() + ((function () {
-                var $83 = Data_Maybe.isJust(tree.value0.behaviors.update);
-                if ($83) {
+                var $87 = Data_Maybe.isJust(tree.value0.behaviors.update);
+                if ($87) {
                     return "U";
                 };
                 return "";
             })() + (function () {
-                var $84 = Data_Maybe.isJust(tree.value0.behaviors.exit);
-                if ($84) {
+                var $88 = Data_Maybe.isJust(tree.value0.behaviors.exit);
+                if ($88) {
                     return "X";
                 };
                 return "";
@@ -341,7 +350,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 207, column 5 - line 209, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 210, column 5 - line 212, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(addNode("template(datum) \u2192")("templateNode"))(function (templateLabel) {
                         return discard2(addEdge(joinId)(templateLabel))(function () {
@@ -356,7 +365,7 @@ var renderTree = function (tree) {
                                         return pure2(Data_Unit.unit);
                                     });
                                 };
-                                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 216, column 5 - line 221, column 18): " + [ v.constructor.name ]);
+                                throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 219, column 5 - line 224, column 18): " + [ v.constructor.name ]);
                             })())(function () {
                                 return pure2(joinId);
                             });
@@ -367,20 +376,20 @@ var renderTree = function (tree) {
         };
         if (tree instanceof PSD3_AST.UpdateNestedJoin) {
             var behaviorInfo = (function () {
-                var $91 = Data_Maybe.isJust(tree.value0.behaviors.enter);
-                if ($91) {
+                var $95 = Data_Maybe.isJust(tree.value0.behaviors.enter);
+                if ($95) {
                     return "E";
                 };
                 return "";
             })() + ((function () {
-                var $92 = Data_Maybe.isJust(tree.value0.behaviors.update);
-                if ($92) {
+                var $96 = Data_Maybe.isJust(tree.value0.behaviors.update);
+                if ($96) {
                     return "U";
                 };
                 return "";
             })() + (function () {
-                var $93 = Data_Maybe.isJust(tree.value0.behaviors.exit);
-                if ($93) {
+                var $97 = Data_Maybe.isJust(tree.value0.behaviors.exit);
+                if ($97) {
                     return "X";
                 };
                 return "";
@@ -394,7 +403,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 236, column 5 - line 238, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 239, column 5 - line 241, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(addNode("decompose(datum) \u2192")("decomposeNode"))(function (decomposeId) {
                         return discard2(addEdge(joinId)(decomposeId))(function () {
@@ -417,9 +426,9 @@ var renderTree = function (tree) {
                                                     return pure2(Data_Unit.unit);
                                                 });
                                             };
-                                            throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 253, column 9 - line 258, column 22): " + [ v1.constructor.name ]);
+                                            throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 256, column 9 - line 261, column 22): " + [ v1.constructor.name ]);
                                         };
-                                        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 249, column 5 - line 258, column 22): " + [ v.constructor.name ]);
+                                        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 252, column 5 - line 261, column 22): " + [ v.constructor.name ]);
                                     })())(function () {
                                         return pure2(joinId);
                                     });
@@ -440,7 +449,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 268, column 5 - line 270, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 271, column 5 - line 273, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(traverse(function (i) {
                         return bind2(addNode("case " + (show(i + 1 | 0) + ": predicate \u2192 spec"))("caseNode"))(function (caseLabel) {
@@ -463,7 +472,7 @@ var renderTree = function (tree) {
                     if (parentId instanceof Data_Maybe.Nothing) {
                         return pure2(Data_Unit.unit);
                     };
-                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 286, column 5 - line 288, column 27): " + [ parentId.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 289, column 5 - line 291, column 27): " + [ parentId.constructor.name ]);
                 })())(function () {
                     return bind2(renderTree(tree.value0.child)(new Data_Maybe.Just(coordId)))(function () {
                         return pure2(coordId);
@@ -471,7 +480,7 @@ var renderTree = function (tree) {
                 });
             });
         };
-        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 118, column 28 - line 293, column 17): " + [ tree.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.Interpreter.Mermaid (line 121, column 28 - line 296, column 17): " + [ tree.constructor.name ]);
     };
 };
 var runMermaidTree = function (tree) {

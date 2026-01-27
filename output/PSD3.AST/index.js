@@ -3,6 +3,7 @@ import * as Control_Category from "../Control.Category/index.js";
 import * as Data_Maybe from "../Data.Maybe/index.js";
 import * as Data_Semigroup from "../Data.Semigroup/index.js";
 import * as PSD3_Internal_Selection_Types from "../PSD3.Internal.Selection.Types/index.js";
+import * as PSD3_TreeDSL from "../PSD3.TreeDSL/index.js";
 var append = /* #__PURE__ */ Data_Semigroup.append(Data_Semigroup.semigroupArray);
 var Node = /* #__PURE__ */ (function () {
     function Node(value0) {
@@ -67,6 +68,215 @@ var LocalCoordSpace = /* #__PURE__ */ (function () {
     };
     return LocalCoordSpace;
 })();
+var treeDSLTree = {
+    named: function (elemType) {
+        return function (name) {
+            return function (attrs) {
+                return new Node({
+                    name: new Data_Maybe.Just(name),
+                    elemType: elemType,
+                    attrs: attrs,
+                    behaviors: [  ],
+                    children: [  ]
+                });
+            };
+        };
+    },
+    elem: function (elemType) {
+        return function (attrs) {
+            return new Node({
+                name: Data_Maybe.Nothing.value,
+                elemType: elemType,
+                attrs: attrs,
+                behaviors: [  ],
+                children: [  ]
+            });
+        };
+    },
+    withChild: function (parent) {
+        return function (child) {
+            if (parent instanceof Node) {
+                return new Node({
+                    name: parent.value0.name,
+                    elemType: parent.value0.elemType,
+                    attrs: parent.value0.attrs,
+                    behaviors: parent.value0.behaviors,
+                    children: append(parent.value0.children)([ child ])
+                });
+            };
+            if (parent instanceof Join) {
+                return new Join(parent.value0);
+            };
+            if (parent instanceof NestedJoin) {
+                return new NestedJoin(parent.value0);
+            };
+            if (parent instanceof UpdateJoin) {
+                return new UpdateJoin(parent.value0);
+            };
+            if (parent instanceof UpdateNestedJoin) {
+                return new UpdateNestedJoin(parent.value0);
+            };
+            if (parent instanceof ConditionalRender) {
+                return new ConditionalRender(parent.value0);
+            };
+            if (parent instanceof LocalCoordSpace) {
+                return new LocalCoordSpace(parent.value0);
+            };
+            throw new Error("Failed pattern match at PSD3.AST (line 597, column 28 - line 604, column 47): " + [ parent.constructor.name ]);
+        };
+    },
+    withChildren: function (parent) {
+        return function (newChildren) {
+            if (parent instanceof Node) {
+                return new Node({
+                    name: parent.value0.name,
+                    elemType: parent.value0.elemType,
+                    attrs: parent.value0.attrs,
+                    behaviors: parent.value0.behaviors,
+                    children: append(parent.value0.children)(newChildren)
+                });
+            };
+            if (parent instanceof Join) {
+                return new Join(parent.value0);
+            };
+            if (parent instanceof NestedJoin) {
+                return new NestedJoin(parent.value0);
+            };
+            if (parent instanceof UpdateJoin) {
+                return new UpdateJoin(parent.value0);
+            };
+            if (parent instanceof UpdateNestedJoin) {
+                return new UpdateNestedJoin(parent.value0);
+            };
+            if (parent instanceof ConditionalRender) {
+                return new ConditionalRender(parent.value0);
+            };
+            if (parent instanceof LocalCoordSpace) {
+                return new LocalCoordSpace(parent.value0);
+            };
+            throw new Error("Failed pattern match at PSD3.AST (line 606, column 37 - line 613, column 47): " + [ parent.constructor.name ]);
+        };
+    },
+    withBehaviors: function (tree) {
+        return function (newBehaviors) {
+            if (tree instanceof Node) {
+                return new Node({
+                    name: tree.value0.name,
+                    elemType: tree.value0.elemType,
+                    attrs: tree.value0.attrs,
+                    children: tree.value0.children,
+                    behaviors: append(tree.value0.behaviors)(newBehaviors)
+                });
+            };
+            if (tree instanceof Join) {
+                return new Join(tree.value0);
+            };
+            if (tree instanceof NestedJoin) {
+                return new NestedJoin(tree.value0);
+            };
+            if (tree instanceof UpdateJoin) {
+                return new UpdateJoin(tree.value0);
+            };
+            if (tree instanceof UpdateNestedJoin) {
+                return new UpdateNestedJoin(tree.value0);
+            };
+            if (tree instanceof ConditionalRender) {
+                return new ConditionalRender(tree.value0);
+            };
+            if (tree instanceof LocalCoordSpace) {
+                return new LocalCoordSpace(tree.value0);
+            };
+            throw new Error("Failed pattern match at PSD3.AST (line 615, column 37 - line 622, column 47): " + [ tree.constructor.name ]);
+        };
+    },
+    joinData: function (name) {
+        return function (key) {
+            return function (data$prime) {
+                return function (template) {
+                    return new Join({
+                        name: name,
+                        key: key,
+                        joinData: data$prime,
+                        template: template
+                    });
+                };
+            };
+        };
+    },
+    nestedJoin: function (name) {
+        return function (key) {
+            return function (data$prime) {
+                return function (decomposeFn) {
+                    return function (templateFn) {
+                        return new NestedJoin({
+                            name: name,
+                            key: key,
+                            joinData: data$prime,
+                            decompose: decomposeFn,
+                            template: templateFn
+                        });
+                    };
+                };
+            };
+        };
+    },
+    updateJoin: function (name) {
+        return function (key) {
+            return function (data$prime) {
+                return function (template) {
+                    return function (behaviors) {
+                        return new UpdateJoin({
+                            name: name,
+                            key: key,
+                            joinData: data$prime,
+                            template: template,
+                            keyFn: behaviors.keyFn,
+                            behaviors: {
+                                enter: behaviors.enter,
+                                update: behaviors.update,
+                                exit: behaviors.exit
+                            }
+                        });
+                    };
+                };
+            };
+        };
+    },
+    updateNestedJoin: function (name) {
+        return function (key) {
+            return function (data$prime) {
+                return function (decomposeFn) {
+                    return function (templateFn) {
+                        return function (behaviors) {
+                            return new UpdateNestedJoin({
+                                name: name,
+                                key: key,
+                                joinData: data$prime,
+                                decompose: decomposeFn,
+                                template: templateFn,
+                                behaviors: behaviors
+                            });
+                        };
+                    };
+                };
+            };
+        };
+    },
+    conditionalRender: function (cases) {
+        return new ConditionalRender({
+            cases: cases
+        });
+    },
+    localCoordSpace: function (config) {
+        return function (child) {
+            return new LocalCoordSpace({
+                scaleX: config.scaleX,
+                scaleY: config.scaleY,
+                child: child
+            });
+        };
+    }
+};
 var withChildren = function (parent) {
     return function (newChildren) {
         if (parent instanceof Node) {
@@ -96,7 +306,7 @@ var withChildren = function (parent) {
         if (parent instanceof LocalCoordSpace) {
             return new LocalCoordSpace(parent.value0);
         };
-        throw new Error("Failed pattern match at PSD3.AST (line 295, column 35 - line 302, column 45): " + [ parent.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.AST (line 299, column 35 - line 306, column 45): " + [ parent.constructor.name ]);
     };
 };
 var withChild = function (parent) {
@@ -128,7 +338,7 @@ var withChild = function (parent) {
         if (parent instanceof LocalCoordSpace) {
             return new LocalCoordSpace(parent.value0);
         };
-        throw new Error("Failed pattern match at PSD3.AST (line 282, column 26 - line 289, column 45): " + [ parent.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.AST (line 286, column 26 - line 293, column 45): " + [ parent.constructor.name ]);
     };
 };
 var withBehaviors = function (tree) {
@@ -160,7 +370,7 @@ var withBehaviors = function (tree) {
         if (tree instanceof LocalCoordSpace) {
             return new LocalCoordSpace(tree.value0);
         };
-        throw new Error("Failed pattern match at PSD3.AST (line 322, column 35 - line 329, column 45): " + [ tree.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.AST (line 326, column 35 - line 333, column 45): " + [ tree.constructor.name ]);
     };
 };
 var updateNestedJoin = function (name) {
@@ -329,7 +539,8 @@ export {
     localCoordSpace,
     localCoordSpaceFixed,
     beside,
-    siblings
+    siblings,
+    treeDSLTree
 };
 export {
     Circle,
@@ -340,6 +551,7 @@ export {
     LinearGradient,
     Path,
     PatternFill,
+    Polygon,
     Rect,
     SVG,
     Span,

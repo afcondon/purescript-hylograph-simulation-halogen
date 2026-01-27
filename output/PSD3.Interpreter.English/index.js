@@ -17,12 +17,12 @@ import * as PSD3_Internal_Attribute from "../PSD3.Internal.Attribute/index.js";
 import * as PSD3_Internal_Selection_Types from "../PSD3.Internal.Selection.Types/index.js";
 var show = /* #__PURE__ */ Data_Show.show(Data_Show.showNumber);
 var show1 = /* #__PURE__ */ Data_Show.show(Data_Show.showBoolean);
+var show2 = /* #__PURE__ */ Data_Show.show(Data_Show.showInt);
 var discard = /* #__PURE__ */ Control_Bind.discard(Control_Bind.discardUnit)(/* #__PURE__ */ Control_Monad_Writer_Trans.bindWriterT(Data_Semigroup.semigroupString)(Data_Identity.bindIdentity));
 var tell = /* #__PURE__ */ Control_Monad_Writer_Class.tell(/* #__PURE__ */ Control_Monad_Writer_Trans.monadTellWriterT(Data_Monoid.monoidString)(Data_Identity.monadIdentity));
 var applicativeWriterT = /* #__PURE__ */ Control_Monad_Writer_Trans.applicativeWriterT(Data_Monoid.monoidString)(Data_Identity.applicativeIdentity);
 var when = /* #__PURE__ */ Control_Applicative.when(applicativeWriterT);
 var for_ = /* #__PURE__ */ Data_Foldable.for_(applicativeWriterT)(Data_Foldable.foldableArray);
-var show2 = /* #__PURE__ */ Data_Show.show(Data_Show.showInt);
 var showElemType = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.SVG) {
         return "SVG container";
@@ -41,6 +41,9 @@ var showElemType = function (v) {
     };
     if (v instanceof PSD3_Internal_Selection_Types.Line) {
         return "line";
+    };
+    if (v instanceof PSD3_Internal_Selection_Types.Polygon) {
+        return "polygon";
     };
     if (v instanceof PSD3_Internal_Selection_Types.Text) {
         return "text";
@@ -81,7 +84,7 @@ var showElemType = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.PatternFill) {
         return "fill pattern";
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 118, column 1 - line 118, column 38): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 124, column 1 - line 124, column 38): " + [ v.constructor.name ]);
 };
 var showAttrValue = function (v) {
     if (v instanceof PSD3_Internal_Attribute.StringValue) {
@@ -93,7 +96,7 @@ var showAttrValue = function (v) {
     if (v instanceof PSD3_Internal_Attribute.BooleanValue) {
         return show1(v.value0);
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 144, column 1 - line 144, column 42): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 151, column 1 - line 151, column 42): " + [ v.constructor.name ]);
 };
 var showAttrName = function (v) {
     return v;
@@ -123,7 +126,7 @@ var describeSource = function (v) {
     if (v instanceof PSD3_Internal_Attribute.OpaqueSource) {
         return "using external metadata (opaque)";
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 109, column 18 - line 115, column 53): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.English (line 115, column 18 - line 121, column 53): " + [ v.constructor.name ]);
 };
 var describeAttribute = function (v) {
     if (v instanceof PSD3_Internal_Attribute.StaticAttr) {
@@ -134,6 +137,12 @@ var describeAttribute = function (v) {
     };
     if (v instanceof PSD3_Internal_Attribute.IndexedAttr) {
         return "Set " + (showAttrName(v.value0) + (" " + describeSource(v.value1)));
+    };
+    if (v instanceof PSD3_Internal_Attribute.AnimatedAttr) {
+        return "Animate " + (showAttrName(v.value0.name) + (" over " + (show(v.value0.config.duration) + "ms")));
+    };
+    if (v instanceof PSD3_Internal_Attribute.AnimatedCompound) {
+        return "Animate compound " + (showAttrName(v.value0.name) + (" with " + (show2(Data_Array.length(v.value0.toValues)) + (" components over " + (show(v.value0.config.duration) + "ms")))));
     };
     throw new Error("Failed pattern match at PSD3.Interpreter.English (line 97, column 1 - line 97, column 61): " + [ v.constructor.name ]);
 };

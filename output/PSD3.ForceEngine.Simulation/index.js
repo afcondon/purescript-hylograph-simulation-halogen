@@ -5,12 +5,16 @@ import * as Data_Array from "../Data.Array/index.js";
 import * as Data_Foldable from "../Data.Foldable/index.js";
 import * as Data_Functor from "../Data.Functor/index.js";
 import * as Data_List_Types from "../Data.List.Types/index.js";
+import * as Data_Map from "../Data.Map/index.js";
 import * as Data_Map_Internal from "../Data.Map.Internal/index.js";
 import * as Data_Maybe from "../Data.Maybe/index.js";
 import * as Data_Ord from "../Data.Ord/index.js";
+import * as Data_Set from "../Data.Set/index.js";
+import * as Data_Show from "../Data.Show/index.js";
 import * as Data_Unfoldable from "../Data.Unfoldable/index.js";
 import * as Data_Unit from "../Data.Unit/index.js";
 import * as Effect from "../Effect/index.js";
+import * as Effect_Console from "../Effect.Console/index.js";
 import * as Effect_Ref from "../Effect.Ref/index.js";
 import * as PSD3_ForceEngine_Core from "../PSD3.ForceEngine.Core/index.js";
 import * as PSD3_ForceEngine_Types from "../PSD3.ForceEngine.Types/index.js";
@@ -21,6 +25,9 @@ var pure = /* #__PURE__ */ Control_Applicative.pure(Effect.applicativeEffect);
 var $$delete = /* #__PURE__ */ Data_Map_Internal["delete"](Data_Ord.ordString);
 var when = /* #__PURE__ */ Control_Applicative.when(Effect.applicativeEffect);
 var fromFoldable = /* #__PURE__ */ Data_Array.fromFoldable(Data_List_Types.foldableList);
+var fromFoldable1 = /* #__PURE__ */ Data_Array.fromFoldable(Data_Set.foldableSet);
+var show = /* #__PURE__ */ Data_Show.show(Data_Show.showInt);
+var show1 = /* #__PURE__ */ Data_Show.show(/* #__PURE__ */ Data_Show.showArray(Data_Show.showString));
 var unless = /* #__PURE__ */ Control_Applicative.unless(Effect.applicativeEffect);
 var for_2 = /* #__PURE__ */ for_(Data_Foldable.foldableMaybe);
 var $$void = /* #__PURE__ */ Data_Functor["void"](Effect.functorEffect);
@@ -123,7 +130,7 @@ var invokeTickCallback = function (sim) {
             return callback();
         };
     };
-    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 514, column 26 - line 518, column 13): " + [ sim.callbacks.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 518, column 26 - line 522, column 13): " + [ sim.callbacks.constructor.name ]);
 };
 var invokeStopCallback = function (sim) {
     if (sim.callbacks instanceof Data_Maybe.Nothing) {
@@ -135,7 +142,7 @@ var invokeStopCallback = function (sim) {
             return callback();
         };
     };
-    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 504, column 26 - line 508, column 13): " + [ sim.callbacks.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 508, column 26 - line 512, column 13): " + [ sim.callbacks.constructor.name ]);
 };
 var invokeStartCallback = function (sim) {
     if (sim.callbacks instanceof Data_Maybe.Nothing) {
@@ -147,7 +154,7 @@ var invokeStartCallback = function (sim) {
             return callback();
         };
     };
-    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 494, column 27 - line 498, column 13): " + [ sim.callbacks.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 498, column 27 - line 502, column 13): " + [ sim.callbacks.constructor.name ]);
 };
 var interpolatePositionsInPlace = function (startPos) {
     return function (targetPos) {
@@ -253,7 +260,7 @@ var checkAlphaThresholds = function (prevAlpha) {
                     });
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 527, column 47 - line 534, column 26): " + [ sim.callbacks.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 531, column 47 - line 538, column 26): " + [ sim.callbacks.constructor.name ]);
         };
     };
 };
@@ -264,6 +271,8 @@ var tick = function (sim) {
         var alpha = Effect_Ref.read(sim.alpha)();
         var prevAlpha = Effect_Ref.read(sim.prevAlpha)();
         var forceHandles = fromFoldable(Data_Map_Internal.values(forces));
+        var forceNames = fromFoldable1(Data_Map.keys(forces));
+        when(alpha > 0.99)(Effect_Console.log("[tick] Forces in sim: " + (show(Data_Array.length(forceHandles)) + (" - " + show1(forceNames)))))();
         PSD3_ForceEngine_Core.applyForces(forceHandles)(alpha)();
         PSD3_ForceEngine_Core.integratePositions(nodes)(sim.config.velocityDecay)();
         var newAlpha = PSD3_ForceEngine_Core.decayAlpha(alpha)(sim.config.alphaMin)(sim.config.alphaDecay)(sim.config.alphaTarget);
@@ -380,7 +389,7 @@ var addForce = function (spec) {
             if (v instanceof PSD3_ForceEngine_Types.Radial) {
                 return v.value0;
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 335, column 15 - line 342, column 20): " + [ v.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 336, column 15 - line 343, column 20): " + [ v.constructor.name ]);
         };
         return function __do() {
             var nodes = Effect_Ref.read(sim.nodes)();
@@ -414,7 +423,7 @@ var addForce = function (spec) {
                     var h = PSD3_ForceEngine_Core.createRadial(spec.value1);
                     return PSD3_ForceEngine_Core.initializeForce(h)(nodes)();
                 };
-                throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 302, column 13 - line 329, column 35): " + [ spec.constructor.name ]);
+                throw new Error("Failed pattern match at PSD3.ForceEngine.Simulation (line 303, column 13 - line 330, column 35): " + [ spec.constructor.name ]);
             })();
             var name = forceName(spec);
             return Effect_Ref.modify_(insert(name)(handle))(sim.forces)();

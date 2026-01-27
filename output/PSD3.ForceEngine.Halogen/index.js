@@ -6,6 +6,7 @@ import * as Halogen_Subscription from "../Halogen.Subscription/index.js";
 import * as PSD3_Kernel_D3_Events from "../PSD3.Kernel.D3.Events/index.js";
 import * as PSD3_Kernel_D3_Simulation from "../PSD3.Kernel.D3.Simulation/index.js";
 import * as PSD3_Kernel_D3_SimulationGroup from "../PSD3.Kernel.D3.SimulationGroup/index.js";
+import * as PSD3_Simulation_Emitter from "../PSD3.Simulation.Emitter/index.js";
 var wireUpCallbacks = function (listener) {
     return function (cbs) {
         return function __do() {
@@ -16,6 +17,15 @@ var wireUpCallbacks = function (listener) {
                 return Halogen_Subscription.notify(listener)(new PSD3_Kernel_D3_Events.AlphaDecayed(alpha));
             })(cbs.onAlphaThreshold)();
         };
+    };
+};
+var toHalogenEmitter = function (simEmitter) {
+    return function __do() {
+        var v = Halogen_Subscription.create();
+        PSD3_Simulation_Emitter.subscribe(simEmitter)(function (event) {
+            return Halogen_Subscription.notify(v.listener)(event);
+        })();
+        return v.emitter;
     };
 };
 var subscribeToSimulation = function (sim) {
@@ -29,7 +39,7 @@ var subscribeToSimulation = function (sim) {
             if (v1 instanceof Data_Maybe.Just) {
                 return wireUpCallbacks(v.listener)(v1.value0)();
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 75, column 3 - line 77, column 45): " + [ v1.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 140, column 3 - line 142, column 45): " + [ v1.constructor.name ]);
         })();
         return v.emitter;
     };
@@ -45,19 +55,14 @@ var subscribeToGroup = function (group) {
             if (v1 instanceof Data_Maybe.Just) {
                 return wireUpCallbacks(v.listener)(v1.value0)();
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 120, column 3 - line 122, column 45): " + [ v1.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Halogen (line 185, column 3 - line 187, column 45): " + [ v1.constructor.name ]);
         })();
         return v.emitter;
     };
 };
 export {
+    toHalogenEmitter,
     subscribeToSimulation,
     subscribeToGroup
 };
-export {
-    AlphaDecayed,
-    Started,
-    Stopped,
-    Tick
-} from "../PSD3.Kernel.D3.Events/index.js";
 //# sourceMappingURL=index.js.map

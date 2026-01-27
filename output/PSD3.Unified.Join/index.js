@@ -59,7 +59,7 @@ var toMaybePhaseBehavior = function (v) {
             transition: v.value0.transition
         });
     };
-    throw new Error("Failed pattern match at PSD3.Unified.Join (line 428, column 1 - line 428, column 97): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Unified.Join (line 407, column 1 - line 407, column 97): " + [ v.constructor.name ]);
 };
 var toTree = function (v) {
     if (v.value0.config.decompose instanceof Data_Maybe.Nothing && v.value0.config.gup instanceof Data_Maybe.Nothing) {
@@ -83,7 +83,7 @@ var toTree = function (v) {
             exit: toMaybePhaseBehavior(v.value0.config.gup.value0.exit)
         });
     };
-    throw new Error("Failed pattern match at PSD3.Unified.Join (line 388, column 3 - line 425, column 11): " + [ v.value0.config.decompose.constructor.name, v.value0.config.gup.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Unified.Join (line 367, column 3 - line 404, column 11): " + [ v.value0.config.decompose.constructor.name, v.value0.config.gup.constructor.name ]);
 };
 var noTransition = function (attrs) {
     return {
@@ -91,7 +91,7 @@ var noTransition = function (attrs) {
         transition: Data_Maybe.Nothing.value
     };
 };
-var join$prime = function (name) {
+var join = function (name) {
     return function (key) {
         return function (data_) {
             return function (keyFn) {
@@ -112,31 +112,14 @@ var join$prime = function (name) {
         };
     };
 };
-var join = function (name) {
-    return function (key) {
-        return function (data_) {
-            return function (template) {
-                return new JoinSpec({
-                    data_: data_,
-                    template: template,
-                    config: {
-                        name: name,
-                        key: key,
-                        keyFn: Data_Maybe.Nothing.value,
-                        decompose: Data_Maybe.Nothing.value,
-                        gup: Data_Maybe.Nothing.value
-                    }
-                });
-            };
-        };
-    };
-};
 var nestedJoin = function (name) {
     return function (key) {
         return function (data_) {
             return function (decomposer) {
-                return function (template) {
-                    return withDecompose(decomposer)(join(name)(key)(data_)(template));
+                return function (keyFn) {
+                    return function (template) {
+                        return withDecompose(decomposer)(join(name)(key)(data_)(keyFn)(template));
+                    };
                 };
             };
         };
@@ -145,9 +128,11 @@ var nestedJoin = function (name) {
 var gupJoin = function (name) {
     return function (key) {
         return function (data_) {
-            return function (template) {
-                return function (gup) {
-                    return withGUP(gup)(join(name)(key)(data_)(template));
+            return function (keyFn) {
+                return function (template) {
+                    return function (gup) {
+                        return withGUP(gup)(join(name)(key)(data_)(keyFn)(template));
+                    };
                 };
             };
         };
@@ -157,9 +142,11 @@ var fullJoin = function (name) {
     return function (key) {
         return function (data_) {
             return function (decomposer) {
-                return function (template) {
-                    return function (gup) {
-                        return withGUP(gup)(withDecompose(decomposer)(join(name)(key)(data_)(template)));
+                return function (keyFn) {
+                    return function (template) {
+                        return function (gup) {
+                            return withGUP(gup)(withDecompose(decomposer)(join(name)(key)(data_)(keyFn)(template)));
+                        };
                     };
                 };
             };
@@ -201,7 +188,6 @@ var basicJoin = join;
 export {
     JoinSpec,
     join,
-    join$prime,
     withDecompose,
     withGUP,
     enterSpec,

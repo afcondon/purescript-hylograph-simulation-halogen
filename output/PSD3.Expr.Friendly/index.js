@@ -3,6 +3,7 @@ import * as Color from "../Color/index.js";
 import * as Control_Category from "../Control.Category/index.js";
 import * as Data_Maybe from "../Data.Maybe/index.js";
 import * as Data_Show from "../Data.Show/index.js";
+import * as PSD3_Expr_Animation from "../PSD3.Expr.Animation/index.js";
 import * as PSD3_Expr_Datum from "../PSD3.Expr.Datum/index.js";
 import * as PSD3_Expr_Expr from "../PSD3.Expr.Expr/index.js";
 import * as PSD3_Expr_Interpreter_Eval from "../PSD3.Expr.Interpreter.Eval/index.js";
@@ -577,4 +578,21 @@ export {
     toAttributeValueRem,
     toAttributeValuePercent
 };
+export {
+    animated,
+    animatedAttr,
+    animatedFrom,
+    animatedFromIndexed,
+    animatedFromStatic,
+    animatedTo,
+    animatedToIndexed,
+    fadeIn,
+    fadeOut,
+    growFrom,
+    shrinkTo,
+    withDelay,
+    withDuration,
+    withEasing,
+    withStagger
+} from "../PSD3.Expr.Animation/index.js";
 //# sourceMappingURL=index.js.map

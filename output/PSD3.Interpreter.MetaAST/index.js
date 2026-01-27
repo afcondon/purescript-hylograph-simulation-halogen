@@ -143,6 +143,9 @@ var showElemType = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.Line) {
         return "Line";
     };
+    if (v instanceof PSD3_Internal_Selection_Types.Polygon) {
+        return "Polygon";
+    };
     if (v instanceof PSD3_Internal_Selection_Types.Text) {
         return "Text";
     };

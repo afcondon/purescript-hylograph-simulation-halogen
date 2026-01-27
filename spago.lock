@@ -62,9 +62,11 @@
             "profunctor",
             "psd3-d3-kernel",
             "psd3-graph",
+            "psd3-layout",
             "psd3-selection",
             "psd3-simulation",
             "psd3-simulation-core",
+            "random",
             "refs",
             "safe-coerce",
             "st",
@@ -650,6 +652,9 @@
       },
       "psd3-graph": {
         "path": "../purescript-psd3-graph"
+      },
+      "psd3-layout": {
+        "path": "../purescript-psd3-layout"
       },
       "psd3-selection": {
         "path": "../purescript-psd3-selection"
@@ -1286,6 +1291,31 @@
         "tuples"
       ]
     },
+    "psd3-layout": {
+      "type": "local",
+      "path": "../purescript-psd3-layout",
+      "dependencies": [
+        "arrays",
+        "console",
+        "effect",
+        "either",
+        "foldable-traversable",
+        "foreign",
+        "foreign-object",
+        "integers",
+        "lists",
+        "maybe",
+        "numbers",
+        "ordered-collections",
+        "prelude",
+        "random",
+        "strings",
+        "transformers",
+        "tree-rose",
+        "tuples",
+        "unsafe-coerce"
+      ]
+    },
     "psd3-selection": {
       "type": "local",
       "path": "../purescript-psd3-selection",
@@ -1314,6 +1344,7 @@
         "prelude",
         "profunctor",
         "psd3-graph",
+        "psd3-layout",
         "strings",
         "transformers",
         "tree-rose",
@@ -1367,6 +1398,15 @@
         "ordered-collections",
         "prelude",
         "refs"
+      ]
+    },
+    "random": {
+      "type": "registry",
+      "version": "6.0.0",
+      "integrity": "sha256-CJ611a35MPCE7XQMp0rdC6MCn76znlhisiCRgboAG+Q=",
+      "dependencies": [
+        "effect",
+        "integers"
       ]
     },
     "refs": {

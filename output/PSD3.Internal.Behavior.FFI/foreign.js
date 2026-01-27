@@ -1,6 +1,17 @@
-// FFI for D3 zoom and drag behaviors
-// D3 dependencies: d3-selection, d3-zoom, d3-drag
-import { select, selectAll, pointer } from "d3-selection";
+// FFI for behaviors (zoom, drag, mouse events)
+// NO D3 DEPENDENCIES - using native DOM and Pointer Events
+import {
+  registerSimulationForPointer_,
+  unregisterSimulationForPointer_,
+  attachSimpleDrag_ as nativeSimpleDrag,
+  attachSimulationDragById_ as nativeSimulationDragById,
+  attachSimulationDragNestedById_ as nativeSimulationDragNestedById
+} from "../PSD3.Interaction.Pointer/foreign.js";
+import {
+  attachZoomNative_,
+  attachZoomWithTransformNative_,
+  attachZoomWithCallbackNative_
+} from "../PSD3.Interaction.Zoom/foreign.js";
 
 /**
  * Update an element's attribute by selector
@@ -10,19 +21,19 @@ import { select, selectAll, pointer } from "d3-selection";
  */
 export function updateAttr_(selector) {
   return attr => value => () => {
-    select(selector).attr(attr, value);
+    const element = document.querySelector(selector);
+    if (element) {
+      element.setAttribute(attr, value);
+    }
   };
 }
-import { zoom, zoomIdentity, zoomTransform } from "d3-zoom";
-import { drag } from "d3-drag";
 
 // =============================================================================
 // Simulation Registry
 // =============================================================================
-// Global registry for named simulations, enabling declarative SimulationDrag
-// Each entry maps simulationId -> { reheat: Effect Unit }
-
-const simulationRegistry = new Map();
+// Delegates to Pointer.js for the actual registry - this ensures
+// BehaviorFFI.registerSimulation_ and Pointer.attachSimulationDragById
+// share the same registry.
 
 /**
  * Register a simulation by ID
@@ -31,7 +42,8 @@ const simulationRegistry = new Map();
  */
 export function registerSimulation_(simId) {
   return reheatFn => () => {
-    simulationRegistry.set(simId, { reheat: reheatFn });
+    // Delegate to Pointer module's registry
+    registerSimulationForPointer_(simId)(reheatFn)();
     console.log(`[SimRegistry] Registered simulation: ${simId}`);
   };
 }
@@ -42,128 +54,41 @@ export function registerSimulation_(simId) {
  */
 export function unregisterSimulation_(simId) {
   return () => {
-    simulationRegistry.delete(simId);
+    // Delegate to Pointer module's registry
+    unregisterSimulationForPointer_(simId)();
     console.log(`[SimRegistry] Unregistered simulation: ${simId}`);
   };
 }
 
 /**
- * Check if a simulation is registered
- * @param {string} simId - The simulation ID to check
- * @returns {boolean}
- */
-export function isSimulationRegistered_(simId) {
-  return () => simulationRegistry.has(simId);
-}
-
-// Internal helper to get simulation's reheat function
-function getSimulationReheat(simId) {
-  const sim = simulationRegistry.get(simId);
-  return sim ? sim.reheat : null;
-}
-
-/**
  * Attach simulation-aware drag behavior using the registry
- * Looks up the simulation by ID and calls its reheat function on drag start
+ * DELEGATES to native Pointer Events implementation
  * @param {Element} element - The DOM element to attach drag to
  * @param {string} simId - The registered simulation ID
  * @returns {Element} The element (for chaining)
  */
 export function attachSimulationDragById_(element) {
   return simId => () => {
-    const selection = select(element);
-
-    function dragstarted(event) {
-      // Look up and call the registered reheat function
-      const reheat = getSimulationReheat(simId);
-      if (reheat) {
-        reheat();  // Call PureScript Effect Unit
-      } else {
-        console.warn(`[SimulationDrag] No simulation registered with ID: ${simId}`);
-      }
-      // Set fixed position
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-
-    function dragged(event) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-
-    function dragended(event) {
-      // Release fixed position
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
-
-    const dragBehavior = drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended);
-
-    selection
-      .call(dragBehavior)
-      .style('cursor', 'grab');
-
-    return element;
+    return nativeSimulationDragById(element)(simId)();
   };
 }
 
 /**
  * Attach simulation-aware drag for nested datum structure
- * Like attachSimulationDragById_ but accesses .node field for fx/fy
- * Used when datum is a wrapper containing the actual simulation node
+ * DELEGATES to native Pointer Events implementation
  * @param {Element} element - The DOM element to attach drag to
  * @param {string} simId - The registered simulation ID
  * @returns {Element} The element (for chaining)
  */
 export function attachSimulationDragNestedById_(element) {
   return simId => () => {
-    const selection = select(element);
-
-    function dragstarted(event) {
-      // Look up and call the registered reheat function
-      const reheat = getSimulationReheat(simId);
-      if (reheat) {
-        reheat();  // Call PureScript Effect Unit
-      } else {
-        console.warn(`[SimulationDragNested] No simulation registered with ID: ${simId}`);
-      }
-      // Set fixed position on the nested node
-      const node = event.subject.node;
-      node.fx = node.x;
-      node.fy = node.y;
-    }
-
-    function dragged(event) {
-      const node = event.subject.node;
-      node.fx = event.x;
-      node.fy = event.y;
-    }
-
-    function dragended(event) {
-      // Release fixed position
-      const node = event.subject.node;
-      node.fx = null;
-      node.fy = null;
-    }
-
-    const dragBehavior = drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended);
-
-    selection
-      .call(dragBehavior)
-      .style('cursor', 'grab');
-
-    return element;
+    return nativeSimulationDragNestedById(element)(simId)();
   };
 }
 
 /**
  * Attach zoom behavior to an element
+ * DELEGATES to native Pointer Events implementation
  * @param {Element} element - The DOM element to attach zoom to (typically SVG)
  * @param {number} scaleMin - Minimum zoom scale
  * @param {number} scaleMax - Maximum zoom scale
@@ -172,22 +97,8 @@ export function attachSimulationDragNestedById_(element) {
  */
 export function attachZoom_(element) {
   return scaleMin => scaleMax => targetSelector => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Query target lazily on each zoom event (not eagerly at setup time)
-    // This allows behaviors to be attached before children are rendered
-    function zoomed(event) {
-      const target = selection.select(targetSelector);
-      target.attr('transform', event.transform);
-    }
-
-    const zoomBehavior = zoom()
-      .scaleExtent([scaleMin, scaleMax])
-      .on('zoom', zoomed);
-
-    selection.call(zoomBehavior);
-
+    // Delegate to native zoom implementation
+    attachZoomNative_(element)(scaleMin)(scaleMax)(targetSelector)();
     return element;
   };
 }
@@ -195,23 +106,25 @@ export function attachZoom_(element) {
 /**
  * Get the current zoom transform from an element
  * Returns {k, x, y} or identity transform if none set
+ * Compatible with both native zoom and D3 zoom (both store __zoom property)
  * @param {Element} element - The DOM element with zoom behavior
  * @returns {{k: number, x: number, y: number}} The zoom transform
  */
 export function getZoomTransform_(element) {
   return () => {
-    try {
-      const t = zoomTransform(element);
+    // Native zoom stores transform on element.__zoom (same as D3 convention)
+    const t = element.__zoom;
+    if (t && typeof t.k === 'number') {
       return { k: t.k, x: t.x, y: t.y };
-    } catch (e) {
-      // Return identity if no transform exists
-      return { k: 1, x: 0, y: 0 };
     }
+    // Return identity if no transform exists
+    return { k: 1, x: 0, y: 0 };
   };
 }
 
 /**
  * Attach zoom behavior and restore a previous transform
+ * DELEGATES to native Pointer Events implementation
  * @param {Element} element - The DOM element to attach zoom to
  * @param {number} scaleMin - Minimum zoom scale
  * @param {number} scaleMax - Maximum zoom scale
@@ -221,29 +134,15 @@ export function getZoomTransform_(element) {
  */
 export function attachZoomWithTransform_(element) {
   return scaleMin => scaleMax => targetSelector => transform => () => {
-    const selection = select(element);
-
-    function zoomed(event) {
-      const target = selection.select(targetSelector);
-      target.attr('transform', event.transform);
-    }
-
-    const zoomBehavior = zoom()
-      .scaleExtent([scaleMin, scaleMax])
-      .on('zoom', zoomed);
-
-    selection.call(zoomBehavior);
-
-    // Restore the previous transform
-    const t = zoomIdentity.translate(transform.x, transform.y).scale(transform.k);
-    selection.call(zoomBehavior.transform, t);
-
+    // Delegate to native zoom implementation
+    attachZoomWithTransformNative_(element)(scaleMin)(scaleMax)(targetSelector)(transform)();
     return element;
   };
 }
 
 /**
  * Attach zoom behavior with callback on zoom events
+ * DELEGATES to native Pointer Events implementation
  * Like attachZoomWithTransform_ but also calls a callback with the current transform
  * @param {Element} element - The DOM element to attach zoom to
  * @param {number} scaleMin - Minimum zoom scale
@@ -255,109 +154,43 @@ export function attachZoomWithTransform_(element) {
  */
 export function attachZoomWithCallback_(element) {
   return scaleMin => scaleMax => targetSelector => initialTransform => onZoom => () => {
-    const selection = select(element);
-
-    function zoomed(event) {
-      const target = selection.select(targetSelector);
-      target.attr('transform', event.transform);
-      // Call PureScript callback with transform
-      const t = { k: event.transform.k, x: event.transform.x, y: event.transform.y };
-      onZoom(t)();
-    }
-
-    const zoomBehavior = zoom()
-      .scaleExtent([scaleMin, scaleMax])
-      .on('zoom', zoomed);
-
-    selection.call(zoomBehavior);
-
-    // Restore the previous transform
-    const t = zoomIdentity.translate(initialTransform.x, initialTransform.y).scale(initialTransform.k);
-    selection.call(zoomBehavior.transform, t);
-
+    // Delegate to native zoom implementation
+    attachZoomWithCallbackNative_(element)(scaleMin)(scaleMax)(targetSelector)(initialTransform)(onZoom)();
     return element;
   };
 }
 
 /**
  * Attach simple drag behavior to an element
+ * DELEGATES to native Pointer Events implementation
  * @param {Element} element - The DOM element to attach drag to
  * @returns {Element} The element (for chaining)
  */
 export function attachSimpleDrag_(element) {
   return () => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    let transform = { x: 0, y: 0 };
-
-    function dragstarted(event) {
-      select(this).raise();
-    }
-
-    function dragged(event) {
-      transform.x += event.dx;
-      transform.y += event.dy;
-      select(this).attr('transform', `translate(${transform.x},${transform.y})`);
-    }
-
-    const dragBehavior = drag()
-      .on('start', dragstarted)
-      .on('drag', dragged);
-
-    selection.call(dragBehavior);
-
-    return element;
+    return nativeSimpleDrag(element)()();
   };
 }
 
 /**
- * Attach simulation-aware drag behavior to an element
+ * DEPRECATED: Attach simulation-aware drag behavior to an element
+ *
+ * This function is deprecated. Use registerSimulation_ + attachSimulationDragById_ instead,
+ * or use PSD3.Interaction.Pointer.attachSimulationDrag with a reheat function.
+ *
  * @param {Element} element - The DOM element to attach drag to
- * @param {d3.Simulation|null} simulation - The D3 force simulation
- * @param {string} label - Event namespace label
- * @returns {Element} The element (for chaining)
+ * @param {d3.Simulation|null} simulation - The D3 force simulation (IGNORED)
+ * @param {string} label - Event namespace label (IGNORED)
+ * @throws {Error} This function is deprecated
  */
 export function attachSimulationDrag_(element) {
   return simulation => label => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    function dragstarted(event) {
-      if (simulation) {
-        // Always restart if simulation has stopped (alpha = 0)
-        // Only reheat if this is the first concurrent drag (!event.active)
-        if (!event.active || simulation.alpha() < 0.001) {
-          simulation.alphaTarget(0.3).restart();
-        }
-      }
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-
-    function dragged(event) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-
-    function dragended(event) {
-      if (simulation && !event.active) {
-        simulation.alphaTarget(0);
-      }
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
-
-    const dragBehavior = drag()
-      .on('start.' + label, dragstarted)
-      .on('drag.' + label, dragged)
-      .on('end.' + label, dragended);
-
-    selection
-      .call(dragBehavior)
-      .style('cursor', 'pointer');  // Set cursor to pointer for draggable elements
-
-    return element;
+    console.error(
+      '[DEPRECATED] attachSimulationDrag_ is deprecated. ' +
+      'Use registerSimulation_ + Drag (SimulationDrag simId), ' +
+      'or PSD3.Interaction.Pointer.attachSimulationDrag with a reheat function.'
+    );
+    throw new Error('attachSimulationDrag_ is deprecated - use registry-based drag instead');
   };
 }
 
@@ -369,17 +202,13 @@ export function attachSimulationDrag_(element) {
  */
 export function attachClick_(element) {
   return handler => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Attach click event listener
-    selection.on('click', function(event) {
+    element.addEventListener('click', function(event) {
       // Call PureScript handler (it's already an Effect, so invoke it)
       handler();
     });
 
     // Set cursor to pointer for clickable elements
-    selection.style('cursor', 'pointer');
+    element.style.cursor = 'pointer';
 
     return element;
   };
@@ -393,18 +222,15 @@ export function attachClick_(element) {
  */
 export function attachClickWithDatum_(element) {
   return handler => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Attach click event listener
-    selection.on('click', function(event, d) {
-      // D3 v6+ passes datum as second argument
+    element.addEventListener('click', function(event) {
+      // Get datum from element's __data__ property (D3 convention)
+      const d = this.__data__;
       // Call PureScript handler with datum (it returns an Effect, so invoke it)
       handler(d)();
     });
 
     // Set cursor to pointer for clickable elements
-    selection.style('cursor', 'pointer');
+    element.style.cursor = 'pointer';
 
     return element;
   };
@@ -418,12 +244,9 @@ export function attachClickWithDatum_(element) {
  */
 export function attachMouseEnter_(element) {
   return handler => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Attach mouseenter event listener
-    selection.on('mouseenter', function(event, d) {
-      // D3 v6+ passes datum as second argument
+    element.addEventListener('mouseenter', function(event) {
+      // Get datum from element's __data__ property (D3 convention)
+      const d = this.__data__;
       // Call PureScript handler with datum (it returns an Effect, so invoke it)
       handler(d)();
     });
@@ -440,12 +263,9 @@ export function attachMouseEnter_(element) {
  */
 export function attachMouseLeave_(element) {
   return handler => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Attach mouseleave event listener
-    selection.on('mouseleave', function(event, d) {
-      // D3 v6+ passes datum as second argument
+    element.addEventListener('mouseleave', function(event) {
+      // Get datum from element's __data__ property (D3 convention)
+      const d = this.__data__;
       // Call PureScript handler with datum (it returns an Effect, so invoke it)
       handler(d)();
     });
@@ -463,26 +283,21 @@ export function attachMouseLeave_(element) {
  */
 export function attachHighlight_(element) {
   return enterStyles => leaveStyles => () => {
-    // Create D3 selection from element
-    const selection = select(element);
-
-    // Attach mouseenter handler
-    selection.on('mouseenter', function(event) {
-      const sel = select(this);
+    element.addEventListener('mouseenter', function(event) {
       // Raise element to front
-      sel.raise();
+      if (this.parentNode) {
+        this.parentNode.appendChild(this);
+      }
       // Apply enter styles
       enterStyles.forEach(style => {
-        sel.attr(style.attr, style.value);
+        this.setAttribute(style.attr, style.value);
       });
     });
 
-    // Attach mouseleave handler
-    selection.on('mouseleave', function(event) {
-      const sel = select(this);
+    element.addEventListener('mouseleave', function(event) {
       // Apply leave styles
       leaveStyles.forEach(style => {
-        sel.attr(style.attr, style.value);
+        this.setAttribute(style.attr, style.value);
       });
     });
 
@@ -512,9 +327,8 @@ export function attachMouseMoveWithEvent_(element) {
  */
 export function attachMouseMoveWithInfo_(element) {
   return handler => () => {
-    const selection = select(element);
-
-    selection.on('mousemove', function(event, d) {
+    element.addEventListener('mousemove', function(event) {
+      const d = this.__data__;
       const info = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -548,9 +362,8 @@ export function attachMouseEnterWithEvent_(element) {
  */
 export function attachMouseEnterWithInfo_(element) {
   return handler => () => {
-    const selection = select(element);
-
-    selection.on('mouseenter', function(event, d) {
+    element.addEventListener('mouseenter', function(event) {
+      const d = this.__data__;
       const info = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -584,9 +397,8 @@ export function attachMouseLeaveWithEvent_(element) {
  */
 export function attachMouseLeaveWithInfo_(element) {
   return handler => () => {
-    const selection = select(element);
-
-    selection.on('mouseleave', function(event, d) {
+    element.addEventListener('mouseleave', function(event) {
+      const d = this.__data__;
       const info = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -610,9 +422,7 @@ export function attachMouseLeaveWithInfo_(element) {
  */
 export function attachMouseDown_(element) {
   return handler => () => {
-    const selection = select(element);
-
-    selection.on('mousedown', function(event) {
+    element.addEventListener('mousedown', function(event) {
       // Call PureScript handler
       handler();
     });
@@ -637,30 +447,52 @@ export function attachMouseDownWithEvent_(element) {
   };
 }
 
+// =============================================================================
+// SVG Coordinate Utilities
+// =============================================================================
+
+/**
+ * Get mouse position relative to an SVG element (replaces d3.pointer)
+ * @param {MouseEvent} event - The mouse event
+ * @param {SVGElement} svgElement - The SVG element to get coordinates relative to
+ * @returns {[number, number]} [x, y] coordinates
+ */
+function getSvgPointer(event, svgElement) {
+  const pt = svgElement.createSVGPoint();
+  pt.x = event.clientX;
+  pt.y = event.clientY;
+  const ctm = svgElement.getScreenCTM();
+  if (ctm) {
+    const svgP = pt.matrixTransform(ctm.inverse());
+    return [svgP.x, svgP.y];
+  }
+  // Fallback to offset if CTM not available
+  return [event.offsetX, event.offsetY];
+}
+
 /**
  * Attach line chart tooltip behavior
  * Shows series name and interpolated value at mouse position
  */
 export function attachLineTooltip_(svgElement) {
   return pathElement => seriesName => points => margin => () => {
-    const svg = select(svgElement);
-    const path = select(pathElement);
-
     // Get or create tooltip div
-    let tooltip = select('body').select('.line-tooltip');
-    if (tooltip.empty()) {
-      tooltip = select('body')
-        .append('div')
-        .attr('class', 'line-tooltip')
-        .style('position', 'absolute')
-        .style('background', 'rgba(0, 0, 0, 0.8)')
-        .style('color', 'white')
-        .style('padding', '8px 12px')
-        .style('border-radius', '4px')
-        .style('font-size', '12px')
-        .style('pointer-events', 'none')
-        .style('opacity', 0)
-        .style('z-index', 1000);
+    let tooltip = document.querySelector('.line-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'line-tooltip';
+      tooltip.style.cssText = `
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 1000;
+      `;
+      document.body.appendChild(tooltip);
     }
 
     // Sort points by x for binary search
@@ -694,39 +526,37 @@ export function attachLineTooltip_(svgElement) {
     }
 
     // Attach events
-    path
-      .on('mouseenter.tooltip', function(event) {
-        // Highlight the line
-        select(this)
-          .raise()
-          .attr('stroke', '#333')
-          .attr('stroke-width', 2.5);
+    pathElement.addEventListener('mouseenter', function(event) {
+      // Highlight the line - raise it to front
+      if (this.parentNode) {
+        this.parentNode.appendChild(this);
+      }
+      this.setAttribute('stroke', '#333');
+      this.setAttribute('stroke-width', '2.5');
 
-        tooltip
-          .style('opacity', 1);
-      })
-      .on('mousemove.tooltip', function(event) {
-        // Get mouse position relative to SVG
-        const [mouseX, mouseY] = pointer(event, svgElement);
+      tooltip.style.opacity = '1';
+    });
 
-        // Find nearest data point
-        const point = findNearestPoint(mouseX);
+    pathElement.addEventListener('mousemove', function(event) {
+      // Get mouse position relative to SVG
+      const [mouseX, mouseY] = getSvgPointer(event, svgElement);
 
-        // Update tooltip content
-        tooltip
-          .html(`<strong>${seriesName}</strong><br/>${point.label}: ${point.y.toFixed(1)}%`)
-          .style('left', (event.pageX + 15) + 'px')
-          .style('top', (event.pageY - 10) + 'px');
-      })
-      .on('mouseleave.tooltip', function(event) {
-        // Reset line style
-        select(this)
-          .attr('stroke', '#ddd')
-          .attr('stroke-width', 1.5);
+      // Find nearest data point
+      const point = findNearestPoint(mouseX);
 
-        tooltip
-          .style('opacity', 0);
-      });
+      // Update tooltip content
+      tooltip.innerHTML = `<strong>${seriesName}</strong><br/>${point.label}: ${point.y.toFixed(1)}%`;
+      tooltip.style.left = (event.pageX + 15) + 'px';
+      tooltip.style.top = (event.pageY - 10) + 'px';
+    });
+
+    pathElement.addEventListener('mouseleave', function(event) {
+      // Reset line style
+      this.setAttribute('stroke', '#ddd');
+      this.setAttribute('stroke-width', '1.5');
+
+      tooltip.style.opacity = '0';
+    });
 
     return pathElement;
   };
@@ -905,10 +735,9 @@ function applyHighlights(groupName, hoveredId, triggerElement, event) {
     // IMPORTANT: Read datum fresh from element, not from cached entry
     // because __data__ may not have been set when behavior was attached
     const datum = element.__data__;
-    const sel = select(element);
 
     // Remove all highlight classes first
-    ALL_HIGHLIGHT_CLASSES.forEach(cls => sel.classed(cls, false));
+    ALL_HIGHLIGHT_CLASSES.forEach(cls => element.classList.remove(cls));
 
     // Skip if no datum bound to element
     if (!datum) {
@@ -923,13 +752,13 @@ function applyHighlights(groupName, hoveredId, triggerElement, event) {
     // Apply appropriate class
     switch (classification) {
       case HC_PRIMARY:
-        sel.classed(HIGHLIGHT_PRIMARY, true);
+        element.classList.add(HIGHLIGHT_PRIMARY);
         break;
       case HC_RELATED:
-        sel.classed(HIGHLIGHT_RELATED, true);
+        element.classList.add(HIGHLIGHT_RELATED);
         break;
       case HC_DIMMED:
-        sel.classed(HIGHLIGHT_DIMMED, true);
+        element.classList.add(HIGHLIGHT_DIMMED);
         break;
       case HC_NEUTRAL:
       default:
@@ -980,8 +809,7 @@ function clearHighlightsInGroup(groupName) {
   const group = getHighlightGroup(groupName);
 
   group.forEach(entry => {
-    const sel = select(entry.element);
-    ALL_HIGHLIGHT_CLASSES.forEach(cls => sel.classed(cls, false));
+    ALL_HIGHLIGHT_CLASSES.forEach(cls => entry.element.classList.remove(cls));
 
     // Hide tooltip if it exists
     const tooltip = elementTooltips.get(entry.element);
@@ -1007,7 +835,6 @@ function clearHighlightsInGroup(groupName) {
  */
 export function attachCoordinatedHighlight_(element) {
   return identifyFn => classifyFn => groupName => tooltipContentFn => tooltipTrigger => () => {
-    const sel = select(element);
     const group = groupName; // null means global
     const groupKey = group || '_global';
 
@@ -1017,7 +844,7 @@ export function attachCoordinatedHighlight_(element) {
     getHighlightGroup(group).push(entry);
 
     // Attach mouseenter handler
-    sel.on('mouseenter.coordinated', function(event) {
+    element.addEventListener('mouseenter', function(event) {
       const d = this.__data__;
       if (!d) {
         console.warn('[CoordHighlight] mouseenter: No datum on element');
@@ -1028,7 +855,7 @@ export function attachCoordinatedHighlight_(element) {
     });
 
     // Attach mouseleave handler
-    sel.on('mouseleave.coordinated', function(event) {
+    element.addEventListener('mouseleave', function(event) {
       clearHighlightsInGroup(group);
     });
 
@@ -1043,8 +870,7 @@ export function attachCoordinatedHighlight_(element) {
 export function clearAllHighlights_() {
   highlightRegistry.forEach((group, key) => {
     group.forEach(entry => {
-      const sel = select(entry.element);
-      ALL_HIGHLIGHT_CLASSES.forEach(cls => sel.classed(cls, false));
+      ALL_HIGHLIGHT_CLASSES.forEach(cls => entry.element.classList.remove(cls));
     });
   });
 

@@ -3,6 +3,9 @@ import * as Data_Graph_Layout from "../Data.Graph.Layout/index.js";
 import * as PSD3_AST from "../PSD3.AST/index.js";
 import * as PSD3_Data_Node from "../PSD3.Data.Node/index.js";
 import * as PSD3_Expr_Friendly from "../PSD3.Expr.Friendly/index.js";
+import * as PSD3_Interaction_Coordinated from "../PSD3.Interaction.Coordinated/index.js";
+import * as PSD3_Interaction_Pointer from "../PSD3.Interaction.Pointer/index.js";
+import * as PSD3_Interaction_Zoom from "../PSD3.Interaction.Zoom/index.js";
 import * as PSD3_Internal_Attribute from "../PSD3.Internal.Attribute/index.js";
 import * as PSD3_Internal_Behavior_Types from "../PSD3.Internal.Behavior.Types/index.js";
 import * as PSD3_Internal_Capabilities_Selection from "../PSD3.Internal.Capabilities.Selection/index.js";
@@ -12,6 +15,8 @@ import * as PSD3_Internal_Types from "../PSD3.Internal.Types/index.js";
 import * as PSD3_Interpreter_D3 from "../PSD3.Interpreter.D3/index.js";
 import * as PSD3_Render from "../PSD3.Render/index.js";
 import * as PSD3_Scale from "../PSD3.Scale/index.js";
+import * as PSD3_Shape_Arc from "../PSD3.Shape.Arc/index.js";
+import * as PSD3_Shape_Pie from "../PSD3.Shape.Pie/index.js";
 
 export {
     Horizontal,
@@ -27,6 +32,7 @@ export {
     LinearGradient,
     Path,
     PatternFill,
+    Polygon,
     Rect,
     SVG,
     Span,
@@ -97,6 +103,41 @@ export {
     timesN
 } from "../PSD3.Expr.Friendly/index.js";
 export {
+    BrushTrigger,
+    ClearTrigger,
+    FocusTrigger,
+    HoverTrigger,
+    SelectionTrigger,
+    boxesOverlap,
+    clearInteractions,
+    emitTrigger,
+    isHighlighted,
+    isSelected,
+    mkBrushTrigger,
+    mkClearTrigger,
+    mkHoverTrigger,
+    pointInBox,
+    registerCoordinated,
+    simpleHover,
+    withBrush,
+    withSelection
+} from "../PSD3.Interaction.Coordinated/index.js";
+export {
+    attachPointerDrag,
+    attachSimulationDrag,
+    attachSimulationDragNested,
+    pointerPosition
+} from "../PSD3.Interaction.Pointer/index.js";
+export {
+    attachNativeZoom,
+    attachZoomNative,
+    attachZoomWithCallback,
+    attachZoomWithTransform,
+    identity
+} from "../PSD3.Interaction.Zoom/index.js";
+export {
+    AnimatedAttr,
+    AnimatedCompound,
     DataAttr,
     IndexedAttr,
     StaticAttr
@@ -138,8 +179,10 @@ export {
     setAttrs
 } from "../PSD3.Internal.Capabilities.Selection/index.js";
 export {
+    staggerByIndex,
     withTransition,
-    withTransitionExit
+    withTransitionExit,
+    withTransitionStaggered
 } from "../PSD3.Internal.Capabilities.Transition/index.js";
 export {
     Selection
@@ -178,4 +221,15 @@ export {
     symlog,
     ticks
 } from "../PSD3.Scale/index.js";
+export {
+    arcPath,
+    arcPathWithCenter,
+    degreesToRadians,
+    tau
+} from "../PSD3.Shape.Arc/index.js";
+export {
+    defaultPieConfig,
+    pie,
+    pieWithConfig
+} from "../PSD3.Shape.Pie/index.js";
 //# sourceMappingURL=index.js.map

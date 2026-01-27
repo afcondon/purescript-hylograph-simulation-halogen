@@ -361,7 +361,7 @@ var valueToNumber = function (v) {
     if (v instanceof Dynamic) {
         return 0.0;
     };
-    throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 121, column 1 - line 121, column 58): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 127, column 1 - line 127, column 58): " + [ v.constructor.name ]);
 };
 var updateForce = function (fc) {
     return function (s) {
@@ -591,7 +591,7 @@ var createForceHandle = function (fc) {
                     distanceMax: fc.distanceMax
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 433, column 20 - line 448, column 8): " + [ fc.filter.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 439, column 20 - line 454, column 8): " + [ fc.filter.constructor.name ]);
         };
         if (fc.forceType instanceof ForceCollide) {
             if (fc.radius instanceof Static) {
@@ -608,7 +608,7 @@ var createForceHandle = function (fc) {
                     iterations: fc.iterations
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 450, column 19 - line 460, column 8): " + [ fc.radius.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 456, column 19 - line 466, column 8): " + [ fc.radius.constructor.name ]);
         };
         if (fc.forceType instanceof ForceLink) {
             return PSD3_ForceEngine_Core.createLink({
@@ -637,7 +637,7 @@ var createForceHandle = function (fc) {
                     strength: valueToNumber(fc.strength)
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 476, column 21 - line 484, column 8): " + [ fc.x.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 482, column 21 - line 490, column 8): " + [ fc.x.constructor.name ]);
         };
         if (fc.forceType instanceof ForcePositionY) {
             if (fc.y instanceof Static) {
@@ -652,7 +652,7 @@ var createForceHandle = function (fc) {
                     strength: valueToNumber(fc.strength)
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 486, column 21 - line 494, column 8): " + [ fc.y.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 492, column 21 - line 500, column 8): " + [ fc.y.constructor.name ]);
         };
         if (fc.forceType instanceof ForceRadial) {
             if (fc.filter instanceof Data_Maybe.Just) {
@@ -672,9 +672,9 @@ var createForceHandle = function (fc) {
                     strength: valueToNumber(fc.strength)
                 });
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 496, column 18 - line 511, column 8): " + [ fc.filter.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 502, column 18 - line 517, column 8): " + [ fc.filter.constructor.name ]);
         };
-        throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 432, column 31 - line 511, column 8): " + [ fc.forceType.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 438, column 31 - line 517, column 8): " + [ fc.forceType.constructor.name ]);
     })());
 };
 var computeNodeGUP = function (currentNodes) {
@@ -702,7 +702,7 @@ var computeNodeGUP = function (currentNodes) {
                     isEnter: false
                 };
             };
-            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 668, column 7 - line 674, column 73): " + [ v.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.ForceEngine.Setup (line 680, column 7 - line 686, column 73): " + [ v.constructor.name ]);
         };
         var processed = map(processDesired)(desiredNodes);
         var entered = map(function (v) {
@@ -799,6 +799,7 @@ var applySetupWithData = function (setupConfig) {
                     var currentLinks = Effect_Ref.read(sim.links)();
                     var nodeResult = computeNodeGUP(currentNodes)(desiredNodes);
                     Effect_Ref.write(nodeResult.merged)(sim.nodes)();
+                    PSD3_ForceEngine_Core.initializeNodes(nodeResult.merged)();
                     var linkResult = computeLinkGUP(currentLinks)(desiredLinks);
                     Effect_Ref.write(desiredLinks)(sim.links)();
                     applySetup(setupConfig)(sim)();
@@ -850,6 +851,13 @@ export {
     $$static as static,
     dynamic,
     valueToNumber,
+    ForceManyBody,
+    ForceCollide,
+    ForceLink,
+    ForceCenter,
+    ForcePositionX,
+    ForcePositionY,
+    ForceRadial,
     forceName,
     manyBody,
     collide,
@@ -883,6 +891,9 @@ export {
     withVelocityDecay,
     applySetup,
     applySetupWithData,
+    computeNodeGUP,
+    computeLinkGUP,
+    mergeSimulationState,
     addForceToSim,
     removeForceFromSim,
     eqForceType

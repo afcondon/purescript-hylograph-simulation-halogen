@@ -165,29 +165,19 @@ var findByData = function (predicate) {
             if (v instanceof PSD3_Internal_Selection_Types.BoundSelection) {
                 return v.value0;
             };
-            throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 429, column 75 - line 430, column 28): " + [ v.constructor.name ]);
+            throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 424, column 75 - line 425, column 28): " + [ v.constructor.name ]);
         })();
         var zipped = Data_Array.zipWith(Data_Tuple.Tuple.create)(v1.elements)(v1.data);
         var maybeMatch = Data_Array.find(function (v2) {
             return predicate(v2.value1);
         })(zipped);
         if (maybeMatch instanceof Data_Maybe.Nothing) {
-            return pure(new PSD3_Internal_Selection_Types.BoundSelection({
-                elements: [  ],
-                data: [  ],
-                indices: v1.indices,
-                document: v1.document
-            }));
+            return pure(PSD3_Internal_Selection_Types.mkBoundSelection([  ])([  ])(v1.indices)(v1.document));
         };
         if (maybeMatch instanceof Data_Maybe.Just) {
-            return pure(new PSD3_Internal_Selection_Types.BoundSelection({
-                elements: [ maybeMatch.value0.value0 ],
-                data: [ maybeMatch.value0.value1 ],
-                indices: v1.indices,
-                document: v1.document
-            }));
+            return pure(PSD3_Internal_Selection_Types.mkBoundSelection([ maybeMatch.value0.value0 ])([ maybeMatch.value0.value1 ])(v1.indices)(v1.document));
         };
-        throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 435, column 3 - line 447, column 8): " + [ maybeMatch.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 430, column 3 - line 432, column 86): " + [ maybeMatch.constructor.name ]);
     };
 };
 var filterByData = function (predicate) {
@@ -207,12 +197,7 @@ var filterByData = function (predicate) {
         var filteredData = map(function (v2) {
             return v2.value1;
         })(filtered);
-        return pure(new PSD3_Internal_Selection_Types.BoundSelection({
-            elements: filteredElements,
-            data: filteredData,
-            indices: v1.indices,
-            document: v1.document
-        }));
+        return pure(PSD3_Internal_Selection_Types.mkBoundSelection(filteredElements)(filteredData)(v1.indices)(v1.document));
     };
 };
 var emptySelectionFromElements = function (elements) {
@@ -366,7 +351,7 @@ var siblings = function (selection) {
                     var nodes = Web_DOM_NodeList.toArray(nodeList)();
                     return Data_Array.mapMaybe(Web_DOM_Element.fromNode)(nodes);
                 };
-                throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 529, column 5 - line 534, column 45): " + [ maybeParent.constructor.name ]);
+                throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 514, column 5 - line 519, column 45): " + [ maybeParent.constructor.name ]);
             };
         })(elements)();
         var allSiblings = Data_Array.concat(siblingArrays);
@@ -434,7 +419,7 @@ var ancestors = function (selection) {
                         var rest = walkUp(v.value0)();
                         return Data_Array.cons(v.value0)(rest);
                     };
-                    throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 565, column 9 - line 569, column 42): " + [ v.constructor.name ]);
+                    throw new Error("Failed pattern match at PSD3.Internal.Selection.Query (line 550, column 9 - line 554, column 42): " + [ v.constructor.name ]);
                 };
             };
             return walkUp(element);

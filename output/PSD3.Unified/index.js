@@ -120,7 +120,6 @@ export {
     fullJoin,
     gupJoin,
     join,
-    join$prime,
     nestedJoin,
     noTransition,
     toTree,

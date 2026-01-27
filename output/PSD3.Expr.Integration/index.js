@@ -129,6 +129,8 @@ export {
     OpaqueSource,
     StaticSource,
     UnknownSource,
+    AnimatedAttr,
+    AnimatedCompound,
     DataAttr,
     IndexedAttr,
     StaticAttr,

@@ -4,6 +4,7 @@ import * as Data_Functor from "../Data.Functor/index.js";
 import * as Data_Int from "../Data.Int/index.js";
 import * as Data_Map from "../Data.Map/index.js";
 import * as Data_Map_Internal from "../Data.Map.Internal/index.js";
+import * as Data_Number from "../Data.Number/index.js";
 import * as Data_Ord from "../Data.Ord/index.js";
 import * as Data_Set from "../Data.Set/index.js";
 import * as Data_Unfoldable from "../Data.Unfoldable/index.js";
@@ -129,35 +130,180 @@ var lerpInt = function (start) {
         };
     };
 };
+var elasticC5 = /* #__PURE__ */ (function () {
+    return (2.0 * Data_Number.pi) / 4.5;
+})();
+var elasticC4 = /* #__PURE__ */ (function () {
+    return (2.0 * Data_Number.pi) / 3.0;
+})();
+var easeOutSin = function (t) {
+    return Data_Number.sin((t * Data_Number.pi) / 2.0);
+};
 var easeOutQuad = function (t) {
     return 1.0 - (1.0 - t) * (1.0 - t);
+};
+var easeOutExp = function (t) {
+    var $21 = t === 1.0;
+    if ($21) {
+        return 1.0;
+    };
+    return 1.0 - Data_Number.pow(2.0)(-10.0 * t);
+};
+var easeOutElastic = function (t) {
+    var $22 = t === 0.0;
+    if ($22) {
+        return 0.0;
+    };
+    var $23 = t === 1.0;
+    if ($23) {
+        return 1.0;
+    };
+    return Data_Number.pow(2.0)(-10.0 * t) * Data_Number.sin((t * 10.0 - 0.75) * elasticC4) + 1.0;
 };
 var easeOutCubic = function (t) {
     return 1.0 - (1.0 - t) * (1.0 - t) * (1.0 - t);
 };
+var easeOutCircle = function (t) {
+    return Data_Number.sqrt(1.0 - (t - 1.0) * (t - 1.0));
+};
 var easeOut = easeOutQuad;
+var easeInSin = function (t) {
+    return 1.0 - Data_Number.cos((t * Data_Number.pi) / 2.0);
+};
 var easeInQuad = function (t) {
     return t * t;
 };
+var easeInOutSin = function (t) {
+    return -(Data_Number.cos(Data_Number.pi * t) - 1.0) / 2.0;
+};
 var easeInOutQuad = function (t) {
-    var $20 = t < 0.5;
-    if ($20) {
+    var $24 = t < 0.5;
+    if ($24) {
         return 2.0 * t * t;
     };
     return 1.0 - ((-2.0 * t + 2.0) * (-2.0 * t + 2.0)) / 2.0;
 };
+var easeInOutExp = function (t) {
+    var $25 = t === 0.0;
+    if ($25) {
+        return 0.0;
+    };
+    var $26 = t === 1.0;
+    if ($26) {
+        return 1.0;
+    };
+    var $27 = t < 0.5;
+    if ($27) {
+        return Data_Number.pow(2.0)(20.0 * t - 10.0) / 2.0;
+    };
+    return (2.0 - Data_Number.pow(2.0)(-20.0 * t + 10.0)) / 2.0;
+};
+var easeInOutElastic = function (t) {
+    var $28 = t === 0.0;
+    if ($28) {
+        return 0.0;
+    };
+    var $29 = t === 1.0;
+    if ($29) {
+        return 1.0;
+    };
+    var $30 = t < 0.5;
+    if ($30) {
+        return -(Data_Number.pow(2.0)(20.0 * t - 10.0) * Data_Number.sin((20.0 * t - 11.125) * elasticC5)) / 2.0;
+    };
+    return (Data_Number.pow(2.0)(-20.0 * t + 10.0) * Data_Number.sin((20.0 * t - 11.125) * elasticC5)) / 2.0 + 1.0;
+};
 var easeInOutCubic = function (t) {
-    var $21 = t < 0.5;
-    if ($21) {
+    var $31 = t < 0.5;
+    if ($31) {
         return 4.0 * t * t * t;
     };
     return 1.0 - ((-2.0 * t + 2.0) * (-2.0 * t + 2.0) * (-2.0 * t + 2.0)) / 2.0;
 };
+var easeInOutCircle = function (t) {
+    var $32 = t < 0.5;
+    if ($32) {
+        return (1.0 - Data_Number.sqrt(1.0 - 2.0 * t * (2.0 * t))) / 2.0;
+    };
+    return (Data_Number.sqrt(1.0 - (-2.0 * t + 2.0) * (-2.0 * t + 2.0)) + 1.0) / 2.0;
+};
 var easeInOut = easeInOutQuad;
+var easeInExp = function (t) {
+    var $33 = t === 0.0;
+    if ($33) {
+        return 0.0;
+    };
+    return Data_Number.pow(2.0)(10.0 * (t - 1.0));
+};
+var easeInElastic = function (t) {
+    var $34 = t === 0.0;
+    if ($34) {
+        return 0.0;
+    };
+    var $35 = t === 1.0;
+    if ($35) {
+        return 1.0;
+    };
+    return -Data_Number.pow(2.0)(10.0 * t - 10.0) * Data_Number.sin((t * 10.0 - 10.75) * elasticC4);
+};
 var easeInCubic = function (t) {
     return t * t * t;
 };
+var easeInCircle = function (t) {
+    return 1.0 - Data_Number.sqrt(1.0 - t * t);
+};
 var easeIn = easeInQuad;
+var bounceN1 = 7.5625;
+var bounceD1 = 2.75;
+var easeOutBounce = function (t) {
+    var $36 = t < 1.0 / bounceD1;
+    if ($36) {
+        return bounceN1 * t * t;
+    };
+    var $37 = t < 2.0 / bounceD1;
+    if ($37) {
+        var t$prime = t - 1.5 / bounceD1;
+        return bounceN1 * t$prime * t$prime + 0.75;
+    };
+    var $38 = t < 2.5 / bounceD1;
+    if ($38) {
+        var t$prime = t - 2.25 / bounceD1;
+        return bounceN1 * t$prime * t$prime + 0.9375;
+    };
+    var t$prime = t - 2.625 / bounceD1;
+    return bounceN1 * t$prime * t$prime + 0.984375;
+};
+var easeInBounce = function (t) {
+    return 1.0 - easeOutBounce(1.0 - t);
+};
+var easeInOutBounce = function (t) {
+    var $39 = t < 0.5;
+    if ($39) {
+        return (1.0 - easeOutBounce(1.0 - 2.0 * t)) / 2.0;
+    };
+    return (1.0 + easeOutBounce(2.0 * t - 1.0)) / 2.0;
+};
+var backC1 = 1.70158;
+var backC2 = /* #__PURE__ */ (function () {
+    return backC1 * 1.525;
+})();
+var easeInOutBack = function (t) {
+    var $40 = t < 0.5;
+    if ($40) {
+        return (2.0 * t * (2.0 * t) * ((backC2 + 1.0) * 2.0 * t - backC2)) / 2.0;
+    };
+    return ((2.0 * t - 2.0) * (2.0 * t - 2.0) * ((backC2 + 1.0) * (t * 2.0 - 2.0) + backC2) + 2.0) / 2.0;
+};
+var backC3 = /* #__PURE__ */ (function () {
+    return backC1 + 1.0;
+})();
+var easeInBack = function (t) {
+    return backC3 * t * t * t - backC1 * t * t;
+};
+var easeOutBack = function (t) {
+    var t$prime = t - 1.0;
+    return 1.0 + backC3 * t$prime * t$prime * t$prime + backC1 * t$prime * t$prime;
+};
 export {
     tickProgressMap,
     startProgress,
@@ -178,6 +324,24 @@ export {
     easeInCubic,
     easeOutCubic,
     easeInOutCubic,
+    easeInSin,
+    easeOutSin,
+    easeInOutSin,
+    easeInExp,
+    easeOutExp,
+    easeInOutExp,
+    easeInCircle,
+    easeOutCircle,
+    easeInOutCircle,
+    easeInBack,
+    easeOutBack,
+    easeInOutBack,
+    easeInElastic,
+    easeOutElastic,
+    easeInOutElastic,
+    easeInBounce,
+    easeOutBounce,
+    easeInOutBounce,
     withEasing,
     ticksForDuration
 };

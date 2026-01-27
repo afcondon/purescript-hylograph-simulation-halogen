@@ -11,9 +11,9 @@ import * as PSD3_Internal_Attribute from "../PSD3.Internal.Attribute/index.js";
 import * as PSD3_Internal_Selection_Types from "../PSD3.Internal.Selection.Types/index.js";
 var show = /* #__PURE__ */ Data_Show.show(Data_Show.showNumber);
 var show1 = /* #__PURE__ */ Data_Show.show(Data_Show.showBoolean);
+var show2 = /* #__PURE__ */ Data_Show.show(Data_Show.showInt);
 var map = /* #__PURE__ */ Data_Functor.map(Data_Functor.functorArray);
 var append1 = /* #__PURE__ */ Data_Semigroup.append(Data_Semigroup.semigroupArray);
-var show2 = /* #__PURE__ */ Data_Show.show(Data_Show.showInt);
 var staticValueToCode = function (v) {
     if (v instanceof PSD3_Internal_Attribute.StringValue) {
         return "text \"" + (v.value0 + "\"");
@@ -24,7 +24,7 @@ var staticValueToCode = function (v) {
     if (v instanceof PSD3_Internal_Attribute.BooleanValue) {
         return "bool " + show1(v.value0);
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 214, column 21 - line 217, column 38): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 222, column 21 - line 225, column 38): " + [ v.constructor.name ]);
 };
 var showElemType = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.SVG) {
@@ -44,6 +44,9 @@ var showElemType = function (v) {
     };
     if (v instanceof PSD3_Internal_Selection_Types.Line) {
         return "Line";
+    };
+    if (v instanceof PSD3_Internal_Selection_Types.Polygon) {
+        return "Polygon";
     };
     if (v instanceof PSD3_Internal_Selection_Types.Text) {
         return "Text";
@@ -84,7 +87,7 @@ var showElemType = function (v) {
     if (v instanceof PSD3_Internal_Selection_Types.PatternFill) {
         return "PatternFill";
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 249, column 16 - line 268, column 31): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 257, column 16 - line 277, column 31): " + [ v.constructor.name ]);
 };
 var showAttrValue = function (v) {
     if (v instanceof PSD3_Internal_Attribute.StringValue) {
@@ -96,7 +99,7 @@ var showAttrValue = function (v) {
     if (v instanceof PSD3_Internal_Attribute.BooleanValue) {
         return show1(v.value0);
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 272, column 17 - line 275, column 27): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 281, column 17 - line 284, column 27): " + [ v.constructor.name ]);
 };
 var indent = function (n) {
     return Data_String_Common.joinWith("")(Data_Array.replicate(n)("  "));
@@ -120,7 +123,7 @@ var attrSourceToCode = function (v) {
     if (v instanceof PSD3_Internal_Attribute.OpaqueSource) {
         return "OPAQUE -- requires metadata";
     };
-    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 222, column 20 - line 228, column 48): " + [ v.constructor.name ]);
+    throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 230, column 20 - line 236, column 48): " + [ v.constructor.name ]);
 };
 var attrFnName = function (v) {
     if (v === "stroke-width") {
@@ -183,7 +186,13 @@ var attrToCode = function (maybeSample) {
             };
             throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 205, column 5 - line 210, column 57): " + [ maybeSample.constructor.name ]);
         };
-        throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 190, column 31 - line 210, column 57): " + [ attr.constructor.name ]);
+        if (attr instanceof PSD3_Internal_Attribute.AnimatedAttr) {
+            return attrFnName(attr.value0.name) + (" $ animated $ animatedTo \"" + (attr.value0.name + ("\" (...) # withDuration " + show(attr.value0.config.duration))));
+        };
+        if (attr instanceof PSD3_Internal_Attribute.AnimatedCompound) {
+            return attrFnName(attr.value0.name) + (" $ animatedCompound (" + (show2(Data_Array.length(attr.value0.toValues)) + (" components) # withDuration " + show(attr.value0.config.duration))));
+        };
+        throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 190, column 31 - line 218, column 148): " + [ attr.constructor.name ]);
     };
 };
 var attrsInlineToCode = function (maybeSample) {
@@ -197,13 +206,13 @@ var phaseToCode = function (v) {
             return "Nothing";
         };
         if (v1 instanceof Data_Maybe.Just) {
-            var $55 = Data_Array["null"](v1.value0.attrs);
-            if ($55) {
+            var $59 = Data_Array["null"](v1.value0.attrs);
+            if ($59) {
                 return "Nothing";
             };
             return "Just { attrs: " + (attrsInlineToCode(v)(v1.value0.attrs) + ", transition: Nothing }");
         };
-        throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 291, column 1 - line 291, column 82): " + [ v.constructor.name, v1.constructor.name ]);
+        throw new Error("Failed pattern match at PSD3.Interpreter.SemiQuine.TreeToCode (line 300, column 1 - line 300, column 82): " + [ v.constructor.name, v1.constructor.name ]);
     };
 };
 var gupBehaviorsToLines = function (maybeSample) {
@@ -216,8 +225,8 @@ var gupBehaviorsToLines = function (maybeSample) {
 var attrsToLines = function (maybeSample) {
     return function (attrs) {
         return function (indentLevel) {
-            var $57 = Data_Array["null"](attrs);
-            if ($57) {
+            var $61 = Data_Array["null"](attrs);
+            if ($61) {
                 return [ indent(indentLevel) + "[]" ];
             };
             var attrStrings = map(attrToCode(maybeSample))(attrs);
@@ -379,8 +388,8 @@ var childrenWithCommas = function (maybeSample) {
             var renderChild = function (v) {
                 return function (v1) {
                     var prefix = (function () {
-                        var $92 = v1.idx === 0;
-                        if ($92) {
+                        var $96 = v1.idx === 0;
+                        if ($96) {
                             return "  ";
                         };
                         return ", ";
