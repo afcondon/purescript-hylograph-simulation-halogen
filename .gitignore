@@ -1,0 +1,19 @@
+# Build artifacts
+output/
+.spago/
+
+# Dependencies
+node_modules/
+bower_components/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Spago lock (regenerated)
+# spago.lock
