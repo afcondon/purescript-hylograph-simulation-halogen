@@ -19,4 +19,3 @@ package:
     - maybe: ">=6.0.0 <7.0.0"
     - prelude: ">=6.0.2 <7.0.0"
     - refs: ">=6.0.0 <7.0.0"
-    - web-pointerevents: ">=2.0.0 <3.0.0"
