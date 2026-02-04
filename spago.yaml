@@ -19,7 +19,7 @@ workspace:
 
 package:
   name: hylograph-simulation-halogen
-  description: Halogen integration for PSD3 force simulations
+  description: Halogen integration for Hylograph force simulations
   publish:
     version: 0.1.0
     license: MIT
