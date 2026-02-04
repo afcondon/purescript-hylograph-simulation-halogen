@@ -5,8 +5,8 @@
 -- | ## Recommended: High-Level API with Unified Events
 -- |
 -- | ```purescript
--- | import PSD3.Simulation (runSimulation, SimulationEvent(..))
--- | import PSD3.ForceEngine.Halogen (toHalogenEmitter)
+-- | import Hylograph.Simulation (runSimulation, SimulationEvent(..))
+-- | import Hylograph.ForceEngine.Halogen (toHalogenEmitter)
 -- |
 -- | handleAction Initialize = do
 -- |   { handle, events } <- liftEffect $ runSimulation config
@@ -30,7 +30,7 @@
 -- |   emitter <- liftEffect $ subscribeToSimulation sim
 -- |   void $ H.subscribe $ emitter <#> SimulationEvent
 -- | ```
-module PSD3.ForceEngine.Halogen
+module Hylograph.ForceEngine.Halogen
   ( -- * High-Level API (recommended)
     toHalogenEmitter
   , module SimEmitterExport
@@ -49,17 +49,17 @@ import Effect.Ref as Ref
 import Halogen.Subscription as HS
 import Data.Maybe (Maybe(..))
 
--- High-level unified emitter (from PSD3.Simulation)
-import PSD3.Simulation.Emitter as Emitter
-import PSD3.Simulation.Emitter (SimulationEmitter)
-import PSD3.Simulation.Emitter (SimulationEmitter) as SimEmitterExport
-import PSD3.Simulation (SimulationEvent) as HighLevel
+-- High-level unified emitter (from Hylograph.Simulation)
+import Hylograph.Simulation.Emitter as Emitter
+import Hylograph.Simulation.Emitter (SimulationEmitter)
+import Hylograph.Simulation.Emitter (SimulationEmitter) as SimEmitterExport
+import Hylograph.Simulation (SimulationEvent) as HighLevel
 
 -- Legacy D3 kernel events (renamed to avoid conflict)
-import PSD3.Kernel.D3.Events (SimulationEvent, SimulationCallbacks)
-import PSD3.Kernel.D3.Events (SimulationEvent(..)) as D3
-import PSD3.Kernel.D3.Simulation (Simulation, getCallbacks)
-import PSD3.Kernel.D3.SimulationGroup (SimulationGroup, getGroupCallbacks)
+import Hylograph.Kernel.D3.Events (SimulationEvent, SimulationCallbacks)
+import Hylograph.Kernel.D3.Events (SimulationEvent(..)) as D3
+import Hylograph.Kernel.D3.Simulation (Simulation, getCallbacks)
+import Hylograph.Kernel.D3.SimulationGroup (SimulationGroup, getGroupCallbacks)
 
 -- Re-export legacy types with prefixed names
 type D3SimulationEvent = SimulationEvent
@@ -75,8 +75,8 @@ type D3SimulationCallbacks = SimulationCallbacks
 -- | It works with both D3 and WASM engines using the same event model.
 -- |
 -- | ```purescript
--- | import PSD3.Simulation (runSimulation, SimulationEvent(..))
--- | import PSD3.ForceEngine.Halogen (toHalogenEmitter)
+-- | import Hylograph.Simulation (runSimulation, SimulationEvent(..))
+-- | import Hylograph.ForceEngine.Halogen (toHalogenEmitter)
 -- |
 -- | handleAction Initialize = do
 -- |   { handle, events } <- liftEffect $ runSimulation config

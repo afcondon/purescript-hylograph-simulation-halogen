@@ -3,9 +3,9 @@
 -- @inline export spagoVersion always
 module Spago.Generated.BuildInfo where
 
-packages :: { "psd3-simulation-halogen" :: String }
+packages :: { "hylograph-simulation-halogen" :: String }
 packages =
-  { "psd3-simulation-halogen": "0.1.0"
+  { "hylograph-simulation-halogen": "0.1.0"
   }
 
 pursVersion :: String

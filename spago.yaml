@@ -2,34 +2,36 @@ workspace:
   packageSet:
     registry: 67.0.1
   extraPackages:
-    psd3-graph:
-      path: ../purescript-psd3-graph
-    psd3-layout:
-      path: ../purescript-psd3-layout
-    psd3-selection:
-      path: ../purescript-psd3-selection
-    psd3-simulation:
-      path: ../purescript-psd3-simulation
-    psd3-simulation-core:
-      path: ../purescript-psd3-simulation-core
-    psd3-d3-kernel:
-      path: ../purescript-psd3-d3-kernel
+    hylograph-graph:
+      path: ../purescript-hylograph-graph
+    hylograph-layout:
+      path: ../purescript-hylograph-layout
+    hylograph-transitions:
+      path: ../purescript-hylograph-transitions
+    hylograph-selection:
+      path: ../purescript-hylograph-selection
+    hylograph-simulation:
+      path: ../purescript-hylograph-simulation
+    hylograph-simulation-core:
+      path: ../purescript-hylograph-simulation-core
+    hylograph-d3-kernel:
+      path: ../purescript-hylograph-d3-kernel
 
 package:
-  name: psd3-simulation-halogen
+  name: hylograph-simulation-halogen
   description: Halogen integration for PSD3 force simulations
   publish:
     version: 0.1.0
     license: MIT
     location:
       githubOwner: afcondon
-      githubRepo: purescript-psd3-simulation-halogen
+      githubRepo: purescript-hylograph-simulation-halogen
   dependencies:
     - effect
     - halogen-subscriptions
     - maybe
     - prelude
-    - psd3-d3-kernel
-    - psd3-simulation
+    - hylograph-d3-kernel
+    - hylograph-simulation
     - refs
     - web-pointerevents
