@@ -15,7 +15,7 @@
               "hylograph-d3-kernel": ">=0.1.0 <0.2.0"
             },
             {
-              "hylograph-simulation": ">=0.1.0 <0.2.0"
+              "hylograph-simulation": ">=0.2.0 <0.3.0"
             },
             {
               "maybe": ">=6.0.0 <7.0.0"
@@ -446,12 +446,11 @@
     },
     "hylograph-selection": {
       "type": "registry",
-      "version": "0.1.1",
-      "integrity": "sha256-PGMAJeq9FiicgPQY4pdLDNmpSyfd6MbhYshehU9ZIbQ=",
+      "version": "0.2.0",
+      "integrity": "sha256-KTsBdX9zmTupTFnqxQ9hs6UjxrM+gCj0y4u9YYzY3+8=",
       "dependencies": [
         "arrays",
         "colors",
-        "console",
         "contravariant",
         "datetime",
         "effect",
@@ -468,7 +467,6 @@
         "nullable",
         "numbers",
         "ordered-collections",
-        "partial",
         "prelude",
         "refs",
         "strings",
@@ -477,8 +475,8 @@
         "tuples",
         "typelevel-prelude",
         "unsafe-coerce",
-        "unsafe-reference",
         "web-dom",
+        "web-events",
         "web-html",
         "web-pointerevents",
         "web-uievents"
@@ -486,8 +484,8 @@
     },
     "hylograph-simulation": {
       "type": "registry",
-      "version": "0.1.0",
-      "integrity": "sha256-ZROzYOPgA2dmgp7kkrq+NoePd/01zoqr1zmVjSfp5Ak=",
+      "version": "0.2.0",
+      "integrity": "sha256-kjyoBdf50CPbhzIL1FMwmC+2+jxnY59uf8rWkNJG1No=",
       "dependencies": [
         "aff",
         "arrays",
